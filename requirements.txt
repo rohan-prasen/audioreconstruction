@@ -5,8 +5,8 @@ pandas==2.2.0
 pesq==0.0.4
 pystoi==0.4.1
 soundfile==0.12.1
-streamlit==1.54.0
-torch==2.4.0
+streamlit==1.38.0
+torch==2.8.0
 torchaudio==2.4.0
 tqdm==4.66.5
 
