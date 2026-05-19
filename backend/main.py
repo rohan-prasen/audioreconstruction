@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
 from contextlib import asynccontextmanager
@@ -10,6 +11,8 @@ import torch
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+
+logger = logging.getLogger(__name__)
 
 from model.evaluate import load_generator, reconstruct
 
@@ -27,7 +30,8 @@ async def lifespan(app: FastAPI):
         app.state.generator = generator
         app.state.device = device
         app.state.model_loaded = True
-    except FileNotFoundError:
+    except Exception as exc:
+        logger.warning("Could not load model from %s: %s", CHECKPOINT_DIR, exc)
         app.state.generator = None
         app.state.device = device
         app.state.model_loaded = False
