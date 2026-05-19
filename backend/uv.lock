@@ -33,7 +33,7 @@ wheels = [
 ]
 
 [[package]]
-name = "backend"
+name = "audioreconstruction-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
