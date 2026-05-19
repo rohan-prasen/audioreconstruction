@@ -1,4 +1,4 @@
-# Audio Super-Resolution
+# Audio Reconstruction
 
 Reconstruct high-fidelity audio from compressed MP3 sources using adversarial neural networks. The model restores lost high-frequency harmonics, spectral detail, and natural timbre — producing near-lossless FLAC output from lossy input.
 
