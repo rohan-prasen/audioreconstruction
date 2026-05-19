@@ -5,6 +5,16 @@ description = "This is the python package which will contain the code to create 
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "libtorch>=1.2.0.1",
+    "pytest>=9.0.3",
+    "soundfile>=0.13.1",
     "torch>=2.12.0",
+    "torchaudio>=2.11.0",
     "torchvision>=0.27.0",
+    "tqdm>=4.67.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.13",
 ]
