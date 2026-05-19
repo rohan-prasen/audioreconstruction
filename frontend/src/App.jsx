@@ -19,22 +19,30 @@ function formatDuration(seconds) {
     return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-const spring = { type: "spring", stiffness: 300, damping: 30 };
-const springGentle = { type: "spring", stiffness: 200, damping: 25 };
+const spring = { type: "spring", stiffness: 350, damping: 28 };
+const springGentle = { type: "spring", stiffness: 180, damping: 22 };
+const springSnappy = { type: "spring", stiffness: 500, damping: 30 };
 
 const cardVariants = {
-    hidden: { opacity: 0, y: 24, scale: 0.97 },
+    hidden: { opacity: 0, y: 20, scale: 0.98, filter: "blur(4px)" },
     visible: {
         opacity: 1,
         y: 0,
         scale: 1,
-        transition: { ...springGentle, staggerChildren: 0.06 },
+        filter: "blur(0px)",
+        transition: { ...springGentle, staggerChildren: 0.07 },
     },
-    exit: { opacity: 0, y: -16, scale: 0.98, transition: { duration: 0.2 } },
+    exit: {
+        opacity: 0,
+        y: -12,
+        scale: 0.98,
+        filter: "blur(4px)",
+        transition: { duration: 0.18, ease: "easeIn" },
+    },
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 12 },
+    hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: springGentle },
 };
 
@@ -100,54 +108,67 @@ function StatusBadge() {
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: 12 }}
+            initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3, ...springGentle }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-raised/60 border border-border-subtle ${textColor} text-xs font-mono`}
+            transition={{ delay: 0.4, ...springGentle }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${textColor} text-[11px] font-mono tracking-wide`}
+            style={{
+                background: "rgba(20, 18, 30, 0.6)",
+                border: "1px solid rgba(140, 80, 255, 0.08)",
+            }}
         >
-            <motion.span
-                className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
-                animate={
-                    status.checking ? { opacity: [0.4, 1, 0.4] } : undefined
-                }
-                transition={
-                    status.checking
-                        ? { duration: 1.5, repeat: Infinity }
-                        : undefined
-                }
-            />
+            <span className="relative flex h-1.5 w-1.5">
+                {status.model && !status.checking && (
+                    <motion.span
+                        className="absolute inline-flex h-full w-full rounded-full bg-success"
+                        animate={{ scale: [1, 1.8, 1], opacity: [0.7, 0, 0.7] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                    />
+                )}
+                <motion.span
+                    className={`relative inline-flex rounded-full h-1.5 w-1.5 ${dotColor}`}
+                    animate={
+                        status.checking
+                            ? { opacity: [0.3, 1, 0.3] }
+                            : undefined
+                    }
+                    transition={
+                        status.checking
+                            ? { duration: 1.2, repeat: Infinity }
+                            : undefined
+                    }
+                />
+            </span>
             {label}
         </motion.div>
     );
 }
 
-function WaveformVisualizer({ active, barCount = 40 }) {
+function WaveformVisualizer({ active, barCount = 48 }) {
     return (
-        <div className="flex items-end justify-center gap-[2px] h-20 px-2">
+        <div className="flex items-end justify-center gap-[1.5px] h-16 px-1">
             {Array.from({ length: barCount }, (_, i) => {
                 const center = Math.abs(i - barCount / 2) / (barCount / 2);
                 const baseHeight = active
-                    ? 15 + (1 - center) * 85
-                    : 8 + (1 - center) * 24;
-                const delay = i * 0.04;
+                    ? 12 + (1 - center) * 88
+                    : 6 + (1 - center) * 28;
+                const delay = i * 0.03;
                 return (
                     <motion.div
                         key={i}
-                        className="w-[2.5px] rounded-full origin-bottom"
-                        initial={{ scaleY: 0 }}
-                        animate={{ scaleY: 1 }}
-                        transition={{ delay: delay * 0.5, ...spring }}
+                        className="w-[2px] rounded-full origin-bottom"
+                        initial={{ scaleY: 0, opacity: 0 }}
+                        animate={{ scaleY: 1, opacity: 1 }}
+                        transition={{ delay: delay * 0.4, ...spring }}
                         style={{
                             height: `${baseHeight}%`,
                             background: active
-                                ? `linear-gradient(to top, var(--color-accent), var(--color-cyan))`
-                                : `linear-gradient(to top, var(--color-accent-light), var(--color-cyan))`,
+                                ? `linear-gradient(to top, var(--color-accent) 0%, var(--color-cyan) 100%)`
+                                : `linear-gradient(to top, var(--color-accent-light) 0%, var(--color-accent-bright) 100%)`,
                             animation: active
-                                ? `wave-bar 0.7s ease-in-out ${delay}s infinite`
+                                ? `wave-bar 0.6s ease-in-out ${delay}s infinite`
                                 : "none",
-                            opacity: active ? 0.9 : 0.2,
-                            transition:
-                                "opacity 0.6s ease, background 0.6s ease",
+                            opacity: active ? 0.85 : 0.15,
                         }}
                     />
                 );
@@ -163,49 +184,140 @@ function AmbientBackground() {
                 className="absolute inset-0"
                 style={{ background: "var(--color-void)" }}
             />
-            <motion.div
-                className="absolute w-[600px] h-[600px] rounded-full"
+            <div
+                className="absolute inset-0 opacity-[0.035]"
                 style={{
+                    backgroundImage:
+                        "radial-gradient(circle, rgba(140,80,255,0.8) 1px, transparent 1px)",
+                    backgroundSize: "32px 32px",
+                }}
+            />
+            <motion.div
+                className="absolute rounded-full"
+                style={{
+                    width: 700,
+                    height: 700,
                     background:
-                        "radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)",
-                    top: "-10%",
-                    left: "30%",
+                        "radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 65%)",
+                    top: "-15%",
+                    left: "25%",
                 }}
-                animate={{
-                    x: [0, 40, -20, 0],
-                    y: [0, -30, 20, 0],
-                }}
+                animate={{ x: [0, 50, -30, 0], y: [0, -40, 25, 0] }}
                 transition={{
-                    duration: 20,
+                    duration: 24,
                     repeat: Infinity,
                     ease: "easeInOut",
                 }}
             />
             <motion.div
-                className="absolute w-[500px] h-[500px] rounded-full"
+                className="absolute rounded-full"
                 style={{
+                    width: 500,
+                    height: 500,
                     background:
-                        "radial-gradient(circle, rgba(56,189,248,0.04) 0%, transparent 70%)",
-                    bottom: "-5%",
-                    right: "10%",
+                        "radial-gradient(circle, rgba(34,211,238,0.035) 0%, transparent 65%)",
+                    bottom: "-8%",
+                    right: "5%",
                 }}
-                animate={{
-                    x: [0, -30, 20, 0],
-                    y: [0, 20, -30, 0],
-                }}
+                animate={{ x: [0, -35, 25, 0], y: [0, 25, -35, 0] }}
                 transition={{
-                    duration: 25,
+                    duration: 28,
                     repeat: Infinity,
                     ease: "easeInOut",
                 }}
             />
             <div
-                className="absolute inset-0 opacity-[0.015]"
+                className="absolute inset-0 opacity-[0.012]"
                 style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
                     backgroundRepeat: "repeat",
                 }}
             />
+        </div>
+    );
+}
+
+function SonicRings({ active }) {
+    if (!active) return null;
+    return (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {[0, 1, 2].map((i) => (
+                <motion.div
+                    key={i}
+                    className="absolute rounded-full border"
+                    style={{
+                        width: 80,
+                        height: 80,
+                        borderColor: "rgba(139,92,246,0.15)",
+                    }}
+                    animate={{ scale: [0.8, 2.2], opacity: [0.5, 0] }}
+                    transition={{
+                        duration: 2.4,
+                        repeat: Infinity,
+                        delay: i * 0.8,
+                        ease: "easeOut",
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
+function OrbitalProgress() {
+    return (
+        <div className="relative w-20 h-20 mx-auto">
+            <div
+                className="absolute inset-0 rounded-full"
+                style={{ border: "1.5px solid rgba(139,92,246,0.1)" }}
+            />
+            <motion.div
+                className="absolute inset-0"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+            >
+                <svg viewBox="0 0 80 80" className="w-full h-full" fill="none">
+                    <circle
+                        cx="40"
+                        cy="40"
+                        r="39"
+                        stroke="url(#orbital-grad)"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeDasharray="60 185"
+                    />
+                    <defs>
+                        <linearGradient
+                            id="orbital-grad"
+                            x1="0"
+                            y1="0"
+                            x2="80"
+                            y2="80"
+                        >
+                            <stop offset="0%" stopColor="var(--color-accent)" />
+                            <stop
+                                offset="100%"
+                                stopColor="var(--color-cyan)"
+                            />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </motion.div>
+            <motion.div
+                className="absolute inset-0"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+            >
+                <div
+                    className="absolute w-2 h-2 rounded-full"
+                    style={{
+                        background: "var(--color-cyan)",
+                        boxShadow: "0 0 8px var(--color-cyan)",
+                        top: 0,
+                        left: "50%",
+                        transform: "translate(-50%, -1px)",
+                    }}
+                />
+            </motion.div>
         </div>
     );
 }
@@ -241,31 +353,37 @@ function UploadZone({ onFile, dragOver, setDragOver, inputRef }) {
             }}
         >
             <motion.div
-                className="relative rounded-2xl border border-dashed overflow-hidden"
+                className="relative rounded-2xl overflow-hidden"
                 animate={{
                     borderColor: dragOver
-                        ? "rgba(124,58,237,0.6)"
-                        : "rgba(124,58,237,0.2)",
-                    backgroundColor: dragOver
-                        ? "rgba(124,58,237,0.06)"
-                        : "rgba(19,16,30,0.8)",
+                        ? "rgba(139,92,246,0.5)"
+                        : "rgba(139,92,246,0.12)",
                 }}
-                whileHover={{
-                    borderColor: "rgba(124,58,237,0.4)",
-                    backgroundColor: "rgba(19,16,30,0.9)",
-                }}
-                transition={{ duration: 0.25 }}
+                whileHover={{ borderColor: "rgba(139,92,246,0.25)" }}
+                transition={{ duration: 0.2 }}
                 style={{
+                    border: "1px solid rgba(139,92,246,0.12)",
+                    background: dragOver
+                        ? "rgba(139,92,246,0.04)"
+                        : "rgba(12,11,18,0.7)",
                     boxShadow: dragOver
-                        ? "0 0 80px rgba(124,58,237,0.12), inset 0 1px 0 rgba(255,255,255,0.03)"
-                        : "0 0 40px rgba(124,58,237,0.04), inset 0 1px 0 rgba(255,255,255,0.02)",
+                        ? "0 0 80px rgba(139,92,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)"
+                        : "0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)",
                 }}
             >
-                <div className="px-10 py-14 flex flex-col items-center text-center">
+                <div
+                    className="absolute top-0 left-[10%] right-[10%] h-[1px]"
+                    style={{
+                        background:
+                            "linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent)",
+                    }}
+                />
+
+                <div className="px-8 py-16 flex flex-col items-center text-center relative">
                     <input
                         ref={inputRef}
                         type="file"
-                        accept=".mp3,.flac,.wav"
+                        accept=".mp3"
                         className="hidden"
                         onChange={(e) => {
                             const f = e.target.files?.[0];
@@ -274,10 +392,17 @@ function UploadZone({ onFile, dragOver, setDragOver, inputRef }) {
                         }}
                     />
 
-                    <motion.div variants={itemVariants} className="mb-6">
+                    <SonicRings active={dragOver} />
+
+                    <motion.div variants={itemVariants} className="mb-8 relative">
                         <motion.div
-                            className="w-16 h-16 rounded-2xl bg-accent/8 border border-accent/15 flex items-center justify-center"
-                            whileHover={{ scale: 1.05, rotate: 2 }}
+                            className="w-20 h-20 rounded-full flex items-center justify-center relative"
+                            style={{
+                                background:
+                                    "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)",
+                                border: "1px solid rgba(139,92,246,0.12)",
+                            }}
+                            whileHover={{ scale: 1.06 }}
                             transition={spring}
                         >
                             <svg
@@ -290,35 +415,42 @@ function UploadZone({ onFile, dragOver, setDragOver, inputRef }) {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             >
-                                <path d="M12 17V3M12 3L7 8M12 3L17 8" />
-                                <path d="M4 15v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+                                <path d="M12 16V4M12 4L7 9M12 4L17 9" />
                             </svg>
                         </motion.div>
                     </motion.div>
 
+                    <motion.h2
+                        variants={itemVariants}
+                        className="text-text text-[17px] font-semibold mb-2 tracking-[-0.01em]"
+                    >
+                        Upload MP3 to reconstruct
+                    </motion.h2>
                     <motion.p
                         variants={itemVariants}
-                        className="text-text text-base font-medium mb-1.5 tracking-tight"
+                        className="text-text-muted text-sm mb-6"
                     >
-                        Drop audio file to reconstruct
-                    </motion.p>
-                    <motion.p
-                        variants={itemVariants}
-                        className="text-text-muted text-sm mb-5"
-                    >
-                        or click to browse your files
+                        Drag and drop or click to browse
                     </motion.p>
 
                     <motion.div
                         variants={itemVariants}
-                        className="flex items-center gap-3 text-xs text-text-muted"
+                        className="flex items-center gap-2.5"
                     >
-                        <span className="px-2.5 py-1 rounded-md bg-surface-bright/60 text-text-secondary font-mono">
-                            MP3
+                        <span
+                            className="px-3 py-1.5 rounded-lg text-[11px] font-mono font-medium tracking-wider text-accent-light"
+                            style={{
+                                background: "rgba(139,92,246,0.06)",
+                                border: "1px solid rgba(139,92,246,0.1)",
+                            }}
+                        >
+                            .MP3
                         </span>
-                        <span className="text-text-muted/60 mx-1">|</span>
-                        <span className="text-text-muted font-mono">
-                            {formatBytes(MAX_SIZE)} max
+                        <span className="text-text-muted/40 text-xs">
+                            &bull;
+                        </span>
+                        <span className="text-text-muted text-[11px] font-mono">
+                            {formatBytes(MAX_SIZE)} limit
                         </span>
                     </motion.div>
                 </div>
@@ -334,18 +466,33 @@ function ReadyCard({ file, onReconstruct, onReset }) {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="rounded-2xl border border-border bg-surface/80 backdrop-blur-xl overflow-hidden"
+            className="rounded-2xl overflow-hidden"
             style={{
+                background: "rgba(12,11,18,0.75)",
+                border: "1px solid rgba(139,92,246,0.12)",
                 boxShadow:
-                    "0 0 40px rgba(124,58,237,0.06), inset 0 1px 0 rgba(255,255,255,0.03)",
+                    "0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)",
             }}
         >
+            <div
+                className="h-[1px]"
+                style={{
+                    background:
+                        "linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent)",
+                }}
+            />
             <div className="p-6 space-y-5">
                 <motion.div
                     variants={itemVariants}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-3.5"
                 >
-                    <div className="w-10 h-10 rounded-xl bg-accent/8 border border-accent/15 flex items-center justify-center shrink-0">
+                    <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                        style={{
+                            background: "rgba(139,92,246,0.06)",
+                            border: "1px solid rgba(139,92,246,0.1)",
+                        }}
+                    >
                         <svg
                             width="18"
                             height="18"
@@ -361,28 +508,30 @@ function ReadyCard({ file, onReconstruct, onReset }) {
                         </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-text text-sm font-medium truncate">
+                        <p className="text-text text-[14px] font-medium truncate leading-tight">
                             {file.name}
                         </p>
-                        <p className="text-text-muted text-xs mt-0.5 font-mono">
+                        <p className="text-text-muted text-[11px] mt-1 font-mono tracking-wide">
                             {formatBytes(file.size)}
                         </p>
                     </div>
                     <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
+                        transition={springSnappy}
                         onClick={onReset}
-                        className="text-text-muted hover:text-error transition-colors p-1.5 rounded-lg hover:bg-error/8 cursor-pointer"
+                        className="text-text-muted hover:text-error transition-colors p-2 rounded-lg cursor-pointer"
+                        style={{ background: "transparent" }}
                         aria-label="Remove file"
                     >
                         <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
                             fill="none"
                         >
                             <path
-                                d="M4 4L12 12M12 4L4 12"
+                                d="M3 3L11 11M11 3L3 11"
                                 stroke="currentColor"
                                 strokeWidth="1.5"
                                 strokeLinecap="round"
@@ -397,19 +546,21 @@ function ReadyCard({ file, onReconstruct, onReset }) {
 
                 <motion.div variants={itemVariants}>
                     <motion.button
-                        whileHover={{ scale: 1.01, y: -1 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.985 }}
                         transition={spring}
                         onClick={onReconstruct}
-                        className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-accent text-white font-medium text-sm rounded-xl cursor-pointer border-0"
+                        className="w-full flex items-center justify-center gap-2.5 py-3.5 text-white font-medium text-[14px] rounded-xl cursor-pointer border-0 tracking-[-0.01em]"
                         style={{
+                            background:
+                                "linear-gradient(135deg, var(--color-accent) 0%, #7c3aed 100%)",
                             boxShadow:
-                                "0 0 20px rgba(124,58,237,0.25), 0 4px 12px rgba(0,0,0,0.3)",
+                                "0 0 24px rgba(139,92,246,0.2), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
                         }}
                     >
                         <svg
-                            width="16"
-                            height="16"
+                            width="15"
+                            height="15"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -421,7 +572,7 @@ function ReadyCard({ file, onReconstruct, onReset }) {
                             <path d="M2 17l10 5 10-5" />
                             <path d="M2 12l10 5 10-5" />
                         </svg>
-                        Reconstruct Audio
+                        Reconstruct
                     </motion.button>
                 </motion.div>
             </div>
@@ -436,49 +587,45 @@ function ProcessingCard({ file, elapsed }) {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="rounded-2xl border border-accent/20 bg-surface/80 backdrop-blur-xl overflow-hidden"
+            className="rounded-2xl overflow-hidden"
             style={{
+                background: "rgba(12,11,18,0.8)",
+                border: "1px solid rgba(139,92,246,0.18)",
                 boxShadow:
-                    "0 0 80px rgba(124,58,237,0.1), inset 0 1px 0 rgba(255,255,255,0.03)",
+                    "0 0 80px rgba(139,92,246,0.08), 0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)",
             }}
         >
-            <div className="p-8 space-y-6">
+            <div
+                className="h-[1px]"
+                style={{
+                    background:
+                        "linear-gradient(90deg, transparent, rgba(139,92,246,0.3), transparent)",
+                }}
+            />
+            <div className="p-8 space-y-7">
                 <motion.div variants={itemVariants}>
-                    <WaveformVisualizer active={true} />
+                    <OrbitalProgress />
                 </motion.div>
 
                 <motion.div
                     variants={itemVariants}
-                    className="text-center space-y-1.5"
+                    className="text-center space-y-1"
                 >
-                    <p className="text-text font-medium text-sm">
-                        Reconstructing audio
-                    </p>
-                    <p className="text-accent-light text-2xl font-mono font-semibold tracking-tight">
+                    <p className="text-accent-bright text-3xl font-mono font-semibold tracking-tighter">
                         {formatDuration(elapsed)}
+                    </p>
+                    <p className="text-text-secondary text-sm">
+                        Reconstructing audio
                     </p>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                    <div className="h-1 rounded-full bg-surface-bright overflow-hidden">
-                        <motion.div
-                            className="h-full rounded-full"
-                            style={{
-                                background:
-                                    "linear-gradient(90deg, var(--color-accent), var(--color-cyan), var(--color-accent))",
-                                backgroundSize: "200% 100%",
-                                animation: "shimmer 1.5s linear infinite",
-                            }}
-                            initial={{ width: "0%" }}
-                            animate={{ width: "100%" }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                        />
-                    </div>
+                    <WaveformVisualizer active={true} barCount={56} />
                 </motion.div>
 
                 <motion.p
                     variants={itemVariants}
-                    className="text-text-muted text-xs text-center font-mono truncate"
+                    className="text-text-muted text-[11px] text-center font-mono truncate tracking-wide"
                 >
                     {file?.name}
                 </motion.p>
@@ -494,26 +641,39 @@ function DoneCard({ result, elapsed, onDownload, onReset }) {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="rounded-2xl border border-border bg-surface/80 backdrop-blur-xl overflow-hidden"
+            className="rounded-2xl overflow-hidden"
             style={{
+                background: "rgba(12,11,18,0.75)",
+                border: "1px solid rgba(139,92,246,0.12)",
                 boxShadow:
-                    "0 0 40px rgba(124,58,237,0.06), inset 0 1px 0 rgba(255,255,255,0.03)",
+                    "0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)",
             }}
         >
+            <div
+                className="h-[1px]"
+                style={{
+                    background:
+                        "linear-gradient(90deg, transparent, rgba(52,211,153,0.3), transparent)",
+                }}
+            />
             <div className="p-6 space-y-5">
                 <motion.div
                     variants={itemVariants}
                     className="flex items-center gap-3"
                 >
                     <motion.div
-                        className="w-10 h-10 rounded-full bg-success/10 border border-success/20 flex items-center justify-center shrink-0"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{
+                            background: "rgba(52,211,153,0.08)",
+                            border: "1px solid rgba(52,211,153,0.15)",
+                        }}
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
                         transition={{
                             type: "spring",
                             stiffness: 400,
-                            damping: 15,
-                            delay: 0.2,
+                            damping: 18,
+                            delay: 0.15,
                         }}
                     >
                         <motion.svg
@@ -521,9 +681,6 @@ function DoneCard({ result, elapsed, onDownload, onReset }) {
                             height="18"
                             viewBox="0 0 18 18"
                             fill="none"
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{ delay: 0.4, duration: 0.4 }}
                         >
                             <motion.path
                                 d="M4 9L7.5 12.5L14 5.5"
@@ -533,15 +690,19 @@ function DoneCard({ result, elapsed, onDownload, onReset }) {
                                 strokeLinejoin="round"
                                 initial={{ pathLength: 0 }}
                                 animate={{ pathLength: 1 }}
-                                transition={{ delay: 0.4, duration: 0.4 }}
+                                transition={{
+                                    delay: 0.35,
+                                    duration: 0.35,
+                                    ease: "easeOut",
+                                }}
                             />
                         </motion.svg>
                     </motion.div>
                     <div>
-                        <p className="text-success text-sm font-medium">
+                        <p className="text-success text-[14px] font-medium">
                             Reconstruction complete
                         </p>
-                        <p className="text-text-muted text-xs mt-0.5 font-mono">
+                        <p className="text-text-muted text-[11px] mt-0.5 font-mono tracking-wide">
                             {formatDuration(elapsed)} elapsed
                         </p>
                     </div>
@@ -549,21 +710,25 @@ function DoneCard({ result, elapsed, onDownload, onReset }) {
 
                 <motion.div
                     variants={itemVariants}
-                    className="rounded-xl bg-surface-raised/60 border border-border-subtle p-4 space-y-2.5"
+                    className="rounded-xl p-4 space-y-3"
+                    style={{
+                        background: "rgba(20, 18, 30, 0.5)",
+                        border: "1px solid rgba(140, 80, 255, 0.06)",
+                    }}
                 >
                     {[
-                        ["File", result.name],
+                        ["Output", result.name],
                         ["Size", formatBytes(result.size)],
-                        ["Format", "FLAC (lossless)"],
+                        ["Format", "FLAC — lossless"],
                     ].map(([label, value]) => (
                         <div
                             key={label}
                             className="flex items-center justify-between"
                         >
-                            <span className="text-text-muted text-xs">
+                            <span className="text-text-muted text-[11px] font-mono uppercase tracking-wider">
                                 {label}
                             </span>
-                            <span className="text-text-secondary font-mono text-xs truncate ml-4 max-w-[240px]">
+                            <span className="text-text-secondary text-[12px] font-mono truncate ml-4 max-w-[220px]">
                                 {value}
                             </span>
                         </div>
@@ -572,19 +737,21 @@ function DoneCard({ result, elapsed, onDownload, onReset }) {
 
                 <motion.div variants={itemVariants} className="flex gap-2.5">
                     <motion.button
-                        whileHover={{ scale: 1.01, y: -1 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.985 }}
                         transition={spring}
                         onClick={onDownload}
-                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-accent text-white font-medium text-sm rounded-xl cursor-pointer border-0"
+                        className="flex-1 flex items-center justify-center gap-2 py-3.5 text-white font-medium text-[14px] rounded-xl cursor-pointer border-0"
                         style={{
+                            background:
+                                "linear-gradient(135deg, var(--color-accent) 0%, #7c3aed 100%)",
                             boxShadow:
-                                "0 0 20px rgba(124,58,237,0.25), 0 4px 12px rgba(0,0,0,0.3)",
+                                "0 0 24px rgba(139,92,246,0.2), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
                         }}
                     >
                         <svg
-                            width="16"
-                            height="16"
+                            width="15"
+                            height="15"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -598,18 +765,19 @@ function DoneCard({ result, elapsed, onDownload, onReset }) {
                         Download FLAC
                     </motion.button>
                     <motion.button
-                        whileHover={{
-                            scale: 1.05,
-                            borderColor: "rgba(124,58,237,0.4)",
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={spring}
+                        whileHover={{ scale: 1.06 }}
+                        whileTap={{ scale: 0.94 }}
+                        transition={springSnappy}
                         onClick={onReset}
-                        className="px-3.5 py-3 rounded-xl border border-border bg-transparent text-text-secondary cursor-pointer flex items-center justify-center hover:bg-accent/5"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer text-text-muted hover:text-accent-light transition-colors"
+                        style={{
+                            background: "transparent",
+                            border: "1px solid rgba(139,92,246,0.12)",
+                        }}
                     >
                         <svg
-                            width="16"
-                            height="16"
+                            width="15"
+                            height="15"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -650,9 +818,9 @@ export default function App() {
         if (!f) return "No file selected.";
         if (
             !ACCEPTED_TYPES.includes(f.type) &&
-            !f.name.match(/\.(mp3|flac|wav)$/i)
+            !f.name.match(/\.mp3$/i)
         ) {
-            return "Unsupported format. Please upload MP3, FLAC, or WAV.";
+            return "Only MP3 files are supported.";
         }
         if (f.size > MAX_SIZE)
             return `File too large. Maximum ${formatBytes(MAX_SIZE)}.`;
@@ -733,20 +901,24 @@ export default function App() {
             <AmbientBackground />
 
             <motion.header
-                initial={{ opacity: 0, y: -12 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
                 className="flex items-center justify-between px-6 py-5 md:px-10 relative z-10"
             >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                     <motion.div
-                        className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/15 flex items-center justify-center"
-                        whileHover={{ scale: 1.05, rotate: -3 }}
-                        transition={spring}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{
+                            background: "rgba(139,92,246,0.08)",
+                            border: "1px solid rgba(139,92,246,0.12)",
+                        }}
+                        whileHover={{ scale: 1.06, rotate: -2 }}
+                        transition={springSnappy}
                     >
                         <svg
-                            width="16"
-                            height="16"
+                            width="15"
+                            height="15"
                             viewBox="0 0 20 20"
                             fill="none"
                         >
@@ -758,16 +930,16 @@ export default function App() {
                             />
                         </svg>
                     </motion.div>
-                    <h1 className="text-[15px] font-semibold tracking-tight text-text">
+                    <span className="text-[15px] font-semibold tracking-tight text-text">
                         Audio
                         <span className="text-accent-light">Recon</span>
-                    </h1>
+                    </span>
                 </div>
                 <StatusBadge />
             </motion.header>
 
             <main className="flex-1 flex items-center justify-center px-4 pb-20 relative z-10">
-                <div className="w-full max-w-md">
+                <div className="w-full max-w-[420px]">
                     <AnimatePresence mode="wait">
                         {phase === "idle" && (
                             <UploadZone
@@ -778,7 +950,6 @@ export default function App() {
                                 inputRef={inputRef}
                             />
                         )}
-
                         {phase === "ready" && file && (
                             <ReadyCard
                                 key="ready"
@@ -787,7 +958,6 @@ export default function App() {
                                 onReset={reset}
                             />
                         )}
-
                         {phase === "processing" && (
                             <ProcessingCard
                                 key="processing"
@@ -795,7 +965,6 @@ export default function App() {
                                 elapsed={elapsed}
                             />
                         )}
-
                         {phase === "done" && result && (
                             <DoneCard
                                 key="done"
@@ -810,15 +979,30 @@ export default function App() {
                     <AnimatePresence>
                         {error && (
                             <motion.div
-                                initial={{ opacity: 0, y: 8, height: 0 }}
+                                initial={{
+                                    opacity: 0,
+                                    y: 6,
+                                    height: 0,
+                                    marginTop: 0,
+                                }}
                                 animate={{
                                     opacity: 1,
                                     y: 0,
                                     height: "auto",
+                                    marginTop: 12,
                                 }}
-                                exit={{ opacity: 0, y: -4, height: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="mt-3 rounded-xl bg-error/8 border border-error/15 px-4 py-3 text-error text-sm overflow-hidden"
+                                exit={{
+                                    opacity: 0,
+                                    y: -4,
+                                    height: 0,
+                                    marginTop: 0,
+                                }}
+                                transition={{ duration: 0.2 }}
+                                className="rounded-xl px-4 py-3 text-error text-sm overflow-hidden"
+                                style={{
+                                    background: "rgba(251,113,133,0.06)",
+                                    border: "1px solid rgba(251,113,133,0.12)",
+                                }}
                             >
                                 {error}
                             </motion.div>
@@ -831,9 +1015,12 @@ export default function App() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
-                className="text-center py-5 text-text-muted/60 text-[11px] font-mono tracking-wider relative z-10"
+                className="text-center py-5 relative z-10"
             >
-                GAN Super-Resolution &middot; 28M params &middot; 44.1kHz Stereo
+                <span className="text-text-muted/40 text-[10px] font-mono tracking-[0.12em] uppercase">
+                    GAN Super-Resolution &middot; 28M params &middot; 44.1kHz
+                    stereo
+                </span>
             </motion.footer>
         </div>
     );

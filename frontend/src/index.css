@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-    --color-void: #06050b;
-    --color-surface: #0d0b14;
-    --color-surface-raised: #13101e;
-    --color-surface-bright: #1c1730;
-    --color-border: rgba(120, 60, 255, 0.12);
-    --color-border-subtle: rgba(120, 60, 255, 0.06);
-    --color-accent: #7c3aed;
+    --color-void: #050508;
+    --color-surface: #0c0b12;
+    --color-surface-raised: #14121e;
+    --color-surface-bright: #1e1a2e;
+    --color-border: rgba(140, 80, 255, 0.10);
+    --color-border-subtle: rgba(140, 80, 255, 0.05);
+    --color-accent: #8b5cf6;
     --color-accent-light: #a78bfa;
-    --color-cyan: #38bdf8;
-    --color-text: #eae6f2;
-    --color-text-secondary: #a59bbe;
-    --color-text-muted: #6b6080;
+    --color-accent-bright: #c4b5fd;
+    --color-cyan: #22d3ee;
+    --color-text: #f0ecf7;
+    --color-text-secondary: #b0a5c8;
+    --color-text-muted: #5e5577;
     --color-success: #34d399;
-    --color-error: #f87171;
+    --color-error: #fb7185;
     --color-warning: #fbbf24;
     --font-display: "Outfit", sans-serif;
     --font-mono: "JetBrains Mono", monospace;
@@ -48,14 +49,14 @@ body {
     50% { transform: scaleY(1); }
 }
 
-@keyframes orbit {
-    from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
-    to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+@keyframes ring-expand {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
 }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+@keyframes orbit-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
