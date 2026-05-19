@@ -1,10 +1,10 @@
 # Security Policy
 
-We take the security and integrity of Monkeytype very seriously. If you have found a vulnerability, please report it ASAP so we can quickly remediate the issue.
+We take the security and integrity of this project very seriously. If you have found a vulnerability, please report it ASAP so we can quickly remediate the issue.
 
 ## Reporting a Vulnerability
 
-For vulnerabilities that impact the confidentiality, integrity, and availability of Monkeytype services, please send your disclosure via [email](mailto:rohanprasenkedari@gmail.com). For non-security related platform bugs, follow the bug submission guidelines. Include as much detail as possible to ensure reproducibility. At a minimum, vulnerability disclosures should include:
+For vulnerabilities that impact the confidentiality, integrity, and availability of audioreconstruction services, please send your disclosure via [email](mailto:rohanprasenkedari@gmail.com). For non-security related platform bugs, follow the bug submission guidelines. Include as much detail as possible to ensure reproducibility. At a minimum, vulnerability disclosures should include:
 
 * Vulnerability Description
 * Proof of Concept
