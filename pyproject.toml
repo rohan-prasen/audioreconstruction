@@ -1,10 +1,11 @@
 [project]
-name = "audioreconstruction-model"
+name = "audioreconstruction"
 version = "0.1.0"
-description = "This is the python package which will contain the code to create the audio reconstruction model"
+description = "This is the python application that created and serves audioreconstruction"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "fastapi>=0.136.1",
     "libtorch>=1.2.0.1",
     "pytest>=9.0.3",
     "rich>=15.0.0",
@@ -12,8 +13,8 @@ dependencies = [
     "soundfile>=0.13.1",
     "torch>=2.12.0",
     "torchaudio>=2.11.0",
-    "torchvision>=0.27.0",
     "tqdm>=4.67.3",
+    "uvicorn>=0.47.0",
 ]
 
 [dependency-groups]
