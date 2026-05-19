@@ -1,7 +1,5 @@
 # Security Policy
 
---
-
 We take the security and integrity of Monkeytype very seriously. If you have found a vulnerability, please report it ASAP so we can quickly remediate the issue.
 
 ## Reporting a Vulnerability
