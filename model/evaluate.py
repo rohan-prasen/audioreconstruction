@@ -125,7 +125,8 @@ def main(
         console.print(f"Processing: {f.name}")
         result = reconstruct(generator, f, device)
         out_file = output_path / f"{f.stem}.flac"
-        sf.write(str(out_file), result.squeeze().numpy(), generator.cfg.sample_rate)
+        audio_out = result.squeeze(0).T.numpy()
+        sf.write(str(out_file), audio_out, generator.cfg.sample_rate)
 
         if reference is not None:
             ref_path = reference / f"{f.stem}.flac" if reference.is_dir() else reference

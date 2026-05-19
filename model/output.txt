@@ -1,0 +1,99 @@
+                                       Results
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━┓
+┃ File                                                             ┃ SNR (dB) ┃ PESQ ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━┩
+│ Arctic Monkeys - I Wanna Be Yours.mp3                            │    22.61 │  nan │
+│ BLOOD_ON_THE_DANCE_FLOOR_HIStory_In_The_Mix_CD_1_TRACK_1_FL.mp3  │    10.94 │  nan │
+│ Dua Lipa - Levitating.mp3                                        │    12.01 │  nan │
+│ Hans Zimmer - Cornfield Chase.mp3                                │    24.60 │  nan │
+│ Hans Zimmer - Day One (Interstellar Theme).mp3                   │    24.09 │  nan │
+│ Hans Zimmer - No Time for Caution.mp3                            │    23.75 │  nan │
+│ Hans Zimmer - S.T.A.Y.mp3                                        │    29.79 │  nan │
+│ HanuMankind - Big Dawgs.mp3                                      │    11.31 │  nan │
+│ Ludwig Goransson - Magic What We Do (Surreal Montage).mp3        │    20.72 │  nan │
+│ Ludwig Goransson - RAINY NIGHT IN TALLINN.mp3                    │    15.88 │  nan │
+│ Ludwig Göransson - Can You Hear The Music.mp3                    │    21.81 │  nan │
+│ Ludwig Göransson - Destroyer Of Worlds.mp3                       │    22.16 │  nan │
+│ Ludwig Göransson - Oppenheimer.mp3                               │    27.33 │  nan │
+│ Michael Jackson - A Place With No Name.mp3                       │    15.49 │  nan │
+│ Michael Jackson - Another Part of Me (2012 Remaster).mp3         │    10.46 │  nan │
+│ Michael Jackson - Bad (2012 Remaster).mp3                        │    11.14 │  nan │
+│ Michael Jackson - Beat It.mp3                                    │    10.11 │  nan │
+│ Michael Jackson - Billie Jean.mp3                                │     6.63 │  nan │
+│ Michael Jackson - Black or White.mp3                             │     9.74 │  nan │
+│ Michael Jackson - Cry.mp3                                        │    11.24 │  nan │
+│ Michael Jackson - Dangerous.mp3                                  │     9.14 │  nan │
+│ Michael Jackson - Dirty Diana (2012 Remaster).mp3                │    10.54 │  nan │
+│ Michael Jackson - Don't Stop 'Til You Get Enough.mp3             │    11.01 │  nan │
+│ Michael Jackson - Earth Song.mp3                                 │    14.50 │  nan │
+│ Michael Jackson - Ghosts.mp3                                     │     8.55 │  nan │
+│ Michael Jackson - Give In to Me.mp3                              │    12.05 │  nan │
+│ Michael Jackson - Hollywood Tonight.mp3                          │    11.51 │  nan │
+│ Michael Jackson - Human Nature.mp3                               │    13.05 │  nan │
+│ Michael Jackson - In the Closet.mp3                              │     8.47 │  nan │
+│ Michael Jackson - Jam.mp3                                        │     8.45 │  nan │
+│ Michael Jackson - Leave Me Alone (2012 Remaster).mp3             │     7.74 │  nan │
+│ Michael Jackson - Liberian Girl (2012 Remastered Version).mp3    │    14.67 │  nan │
+│ Michael Jackson - Love Never Felt So Good.mp3                    │    12.29 │  nan │
+│ Michael Jackson - Man in the Mirror (2012 Remaster).mp3          │    14.41 │  nan │
+│ Michael Jackson - Off the Wall.mp3                               │    13.72 │  nan │
+│ Michael Jackson - One Day In Your Life.mp3                       │    17.98 │  nan │
+│ Michael Jackson - One More Chance.mp3                            │    11.12 │  nan │
+│ Michael Jackson - P.Y.T. (Pretty Young Thing).mp3                │    11.56 │  nan │
+│ Michael Jackson - Remember the Time.mp3                          │    11.96 │  nan │
+│ Michael Jackson - Rock with You (Single Version).mp3             │    11.55 │  nan │
+│ Michael Jackson - She s Out of My Life (Single Version).mp3      │    24.39 │  nan │
+│ Michael Jackson - Smooth Criminal (2012 Remaster).mp3            │     9.23 │  nan │
+│ Michael Jackson - Speed Demon (2012 Remaster).mp3                │     9.59 │  nan │
+│ Michael Jackson - Stranger in Moscow.mp3                         │    13.36 │  nan │
+│ Michael Jackson - The Lady in My Life.mp3                        │    12.80 │  nan │
+│ Michael Jackson - The Way You Make Me Feel (2012 Remaster).mp3   │     9.31 │  nan │
+│ Michael Jackson - They Don't Care About Us.mp3                   │    12.02 │  nan │
+│ Michael Jackson - This Is It.mp3                                 │    16.13 │  nan │
+│ Michael Jackson - Thriller.mp3                                   │    11.98 │  nan │
+│ Michael Jackson - Wanna Be Startin' Somethin'.mp3                │     7.80 │  nan │
+│ Michael Jackson - Who Is It.mp3                                  │     9.31 │  nan │
+│ Michael Jackson - You Are Not Alone.mp3                          │    15.46 │  nan │
+│ Michael Jackson - You Rock My World.mp3                          │     9.13 │  nan │
+│ Michael_Jackson_Childhood_Theme_from__Free_Willy_2_.mp3          │    20.92 │  nan │
+│ Michael_Jackson_I_Just_Can_t_Stop_Loving_You_feat_Siedah_Gar.mp3 │    14.35 │  nan │
+│ Michael_Jackson_Will_You_Be_There_Theme_from__Free_Willy_.mp3    │    12.93 │  nan │
+│ Pipes Of Peace CD 1 TRACK 2 (FLAC).mp3                           │    16.98 │  nan │
+│ The Weeknd - After Hours.mp3                                     │    12.23 │  nan │
+│ The Weeknd - Alone Again.mp3                                     │    14.39 │  nan │
+│ The Weeknd - Blinding Lights (Remix).mp3                         │    12.61 │  nan │
+│ The Weeknd - Blinding Lights.mp3                                 │    17.94 │  nan │
+│ The Weeknd - Call Out My Name.mp3                                │    10.37 │  nan │
+│ The Weeknd - Can t Feel My Face.mp3                              │    14.03 │  nan │
+│ The Weeknd - Dancing In The Flames.mp3                           │    13.90 │  nan │
+│ The Weeknd - Die For You (Remix).mp3                             │    16.27 │  nan │
+│ The Weeknd - Die For You.mp3                                     │    14.81 │  nan │
+│ The Weeknd - Earned It (Fifty Shades Of Grey).mp3                │    15.03 │  nan │
+│ The Weeknd - Hardest To Love.mp3                                 │    17.72 │  nan │
+│ The Weeknd - Heartless.mp3                                       │    15.24 │  nan │
+│ The Weeknd - I Feel It Coming.mp3                                │    10.88 │  nan │
+│ The Weeknd - I Was Never There.mp3                               │    14.31 │  nan │
+│ The Weeknd - In Your Eyes (Remix).mp3                            │    14.45 │  nan │
+│ The Weeknd - In Your Eyes.mp3                                    │    14.29 │  nan │
+│ The Weeknd - Is There Someone Else_.mp3                          │    20.14 │  nan │
+│ The Weeknd - Often.mp3                                           │    18.40 │  nan │
+│ The Weeknd - One Of The Girls.mp3                                │    17.89 │  nan │
+│ The Weeknd - Out of Time.mp3                                     │    12.66 │  nan │
+│ The Weeknd - Reminder.mp3                                        │    18.18 │  nan │
+│ The Weeknd - Sacrifice.mp3                                       │    13.87 │  nan │
+│ The Weeknd - Save Your Tears (Remix).mp3                         │    13.44 │  nan │
+│ The Weeknd - Save Your Tears.mp3                                 │    18.67 │  nan │
+│ The Weeknd - Scared To Live.mp3                                  │    21.30 │  nan │
+│ The Weeknd - Starboy.mp3                                         │    13.37 │  nan │
+│ The Weeknd - Stargirl Interlude.mp3                              │    19.84 │  nan │
+│ The Weeknd - São Paulo.mp3                                       │    16.86 │  nan │
+│ The Weeknd - Take My Breath (Single Version).mp3                 │    14.48 │  nan │
+│ The Weeknd - The Hills.mp3                                       │    13.89 │  nan │
+│ The Weeknd - Timeless.mp3                                        │    13.44 │  nan │
+│ The Weeknd - Too Late.mp3                                        │    10.34 │  nan │
+│ The Weeknd - You Right.mp3                                       │    11.77 │  nan │
+│ The_Very_Best_Of_Michael_Jackson_With_The_Jackson_5_CD_1_TRA.mp3 │    24.95 │  nan │
+│ The_Weeknd_Popular_From_The_Idol_Vol_1_Music_from_the_HBO_Or.mp3 │    15.48 │  nan │
+│ U.S.A. for Africa - We Are The World.mp3                         │    16.09 │  nan │
+└──────────────────────────────────────────────────────────────────┴──────────┴──────┘
+Output saved to output
