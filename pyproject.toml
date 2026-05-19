@@ -3,10 +3,11 @@ name = "audioreconstruction"
 version = "0.1.0"
 description = "This is the python application that created and serves audioreconstruction"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.136.1",
     "libtorch>=1.2.0.1",
+    "pesq>=0.0.4",
     "pytest>=9.0.3",
     "rich>=15.0.0",
     "safetensors>=0.7.0",
