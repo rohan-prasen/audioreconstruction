@@ -4,8 +4,6 @@ We take the security and integrity of Monkeytype very seriously. If you have fou
 
 ## Reporting a Vulnerability
 
-Reporting a Vulnerability
-
 For vulnerabilities that impact the confidentiality, integrity, and availability of Monkeytype services, please send your disclosure via email. For non-security related platform bugs, follow the bug submission guidelines. Include as much detail as possible to ensure reproducibility. At a minimum, vulnerability disclosures should include:
 
 * Vulnerability Description
