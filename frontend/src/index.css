@@ -1,1 +1,67 @@
 @import "tailwindcss";
+
+@theme {
+    --color-void: #06050b;
+    --color-surface: #0d0b14;
+    --color-surface-raised: #13101e;
+    --color-surface-bright: #1c1730;
+    --color-border: rgba(120, 60, 255, 0.12);
+    --color-border-subtle: rgba(120, 60, 255, 0.06);
+    --color-accent: #7c3aed;
+    --color-accent-light: #a78bfa;
+    --color-cyan: #38bdf8;
+    --color-text: #eae6f2;
+    --color-text-secondary: #a59bbe;
+    --color-text-muted: #6b6080;
+    --color-success: #34d399;
+    --color-error: #f87171;
+    --color-warning: #fbbf24;
+    --font-display: "Outfit", sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-display);
+    background: var(--color-void);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes wave-bar {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+}
+
+@keyframes orbit {
+    from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

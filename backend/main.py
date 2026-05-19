@@ -16,7 +16,7 @@ from model.evaluate import load_generator, reconstruct
 load_dotenv()
 
 CHECKPOINT_DIR = Path(os.getenv("CHECKPOINT_DIR", "model/checkpoints/final/"))
-MAX_UPLOAD_BYTES = 250 * 1024 * 1024  # 250 MB
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
 @asynccontextmanager
