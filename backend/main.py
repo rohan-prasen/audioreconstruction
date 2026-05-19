@@ -11,10 +11,12 @@ import torch
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from torchaudio.functional import resample
 
 logger = logging.getLogger(__name__)
 
-from model.evaluate import load_generator, reconstruct
+from model.evaluate import load_generator
+from model.generator import Generator
 
 load_dotenv()
 
@@ -36,6 +38,50 @@ async def lifespan(app: FastAPI):
         app.state.device = device
         app.state.model_loaded = False
     yield
+
+
+def _load_audio_sf(path: Path, target_sr: int, channels: int) -> torch.Tensor:
+    data, sr = sf.read(str(path), dtype="float32", always_2d=True)
+    waveform = torch.from_numpy(data.T)
+    if waveform.shape[0] > channels:
+        waveform = waveform[:channels]
+    elif waveform.shape[0] < channels:
+        waveform = waveform.repeat(channels, 1)[:channels]
+    if sr != target_sr:
+        waveform = resample(waveform, sr, target_sr)
+    return waveform
+
+
+@torch.no_grad()
+def _reconstruct_sf(generator: Generator, input_path: Path, device: torch.device) -> torch.Tensor:
+    sr = generator.cfg.sample_rate
+    waveform = _load_audio_sf(input_path, target_sr=sr, channels=generator.cfg.in_channels)
+    peak = waveform.abs().max()
+    if peak > 0:
+        waveform = waveform / peak
+    seg_len = generator.cfg.segment_length
+    length = waveform.shape[-1]
+
+    if length <= seg_len:
+        padded = torch.nn.functional.pad(waveform, (0, seg_len - length))
+        inp = padded.unsqueeze(0).to(device)
+        with torch.amp.autocast("cuda"):
+            out = generator(inp)
+        return out.squeeze(0).cpu()[:, :length]
+
+    chunks = []
+    for start in range(0, length, seg_len):
+        end = min(start + seg_len, length)
+        chunk = waveform[:, start:end]
+        if chunk.shape[-1] < seg_len:
+            chunk = torch.nn.functional.pad(chunk, (0, seg_len - chunk.shape[-1]))
+        inp = chunk.unsqueeze(0).to(device)
+        with torch.amp.autocast("cuda"):
+            out = generator(inp)
+        actual_len = min(seg_len, length - start)
+        chunks.append(out.squeeze(0).cpu()[:, :actual_len])
+
+    return torch.cat(chunks, dim=-1)
 
 
 app = FastAPI(title="Audio Reconstruction", lifespan=lifespan)
@@ -74,7 +120,7 @@ async def model_serve(file: UploadFile):
 
         generator = app.state.generator
         device = app.state.device
-        result = reconstruct(generator, Path(input_tmp.name), device)
+        result = _reconstruct_sf(generator, Path(input_tmp.name), device)
 
         output_tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False)
         output_tmp.close()
