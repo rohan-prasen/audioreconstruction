@@ -21,6 +21,8 @@ console = Console()
 
 def load_generator(checkpoint_dir: Path, device: torch.device) -> Generator:
     config_path = checkpoint_dir / "config.json"
+    if not config_path.exists():
+        config_path = checkpoint_dir.parent / "config.json"
     if config_path.exists():
         cfg = ModelConfig.load(config_path)
     else:
