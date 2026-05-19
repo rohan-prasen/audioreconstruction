@@ -87,11 +87,11 @@ uv run pytest
 
 ## Contributing
 
-See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ## Security
 
-To report a vulnerability, see [docs/SECURITY.md](docs/SECURITY.md).
+To report a vulnerability, see [SECURITY.md](docs/SECURITY.md).
 
 ## License
 
