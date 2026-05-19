@@ -1,10 +1,17 @@
 [project]
 name = "audioreconstruction"
-version = "0.1.0"
+version = "2.0"
 description = "This is the python application that created and serves audioreconstruction"
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10"
+
+authors = [
+  {name = "Rohan Prasen Kedari", email = "rohanprasenkedari@gmail.com"},
+]
+
 dependencies = [
+    "click>=8.4.0",
     "fastapi>=0.136.1",
     "libtorch>=1.2.0.1",
     "pesq>=0.0.4",

@@ -40,9 +40,10 @@ wheels = [
 
 [[package]]
 name = "audioreconstruction"
-version = "0.1.0"
+version = "2.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "click" },
     { name = "fastapi" },
     { name = "libtorch" },
     { name = "pesq" },
@@ -63,6 +64,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.4.0" },
     { name = "fastapi", specifier = ">=0.136.1" },
     { name = "libtorch", specifier = ">=1.2.0.1" },
     { name = "pesq", specifier = ">=0.0.4" },
