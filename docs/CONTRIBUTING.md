@@ -30,7 +30,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 This project and everyone participating in it is governed by the
 [audioreconstruction Code of Conduct](/docs/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable behavior
-to <>.
+to <rohanprasenkedari@gmail.com>.
 
 
 ## I Have a Question
