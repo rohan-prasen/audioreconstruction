@@ -4,8 +4,6 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 
 **Input:** MP3 (128 / 256 / 320 kbps) | **Output:** FLAC (~800+ kbps effective bitrate)
 
----
-
 ## How It Works
 
 A GAN (Generative Adversarial Network) learns to reverse compression artifacts:
@@ -19,8 +17,6 @@ A GAN (Generative Adversarial Network) learns to reverse compression artifacts:
 - Music remastering from low-bitrate sources
 - Streaming audio quality enhancement
 - Archival recovery of degraded recordings
-
----
 
 ## Architecture
 
@@ -43,8 +39,6 @@ audioreconstruction/
 | Frontend | React 19, Vite 8, Tailwind CSS 4     |
 | Metrics  | PESQ (perceptual evaluation)          |
 | Tooling  | uv (Python), Bun (JS), Ruff (lint)   |
-
----
 
 ## Getting Started
 
@@ -77,8 +71,6 @@ uv run uvicorn backend.main:app --reload
 # Start the frontend (in a separate terminal)
 cd frontend && bun dev
 ```
-
----
 
 ## Development
 
