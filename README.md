@@ -53,6 +53,8 @@ audioreconstruction/
 
 ### Setup
 
+> The model weights are hosted on HuggingFace and here's the [link](https://huggingface.co/rohanprasen-kedari/audioreconstruction/tree/main/checkpoints/best) to the model weights folder. Download the `generator.safetensors` for local testing and inference and paste it under `./model/checkpoints/best/` folder
+
 ```bash
 git clone git@github.com:rohan-prasen/audioreconstruction.git
 cd audioreconstruction
