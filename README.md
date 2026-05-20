@@ -4,6 +4,8 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 
 **Input:** MP3 (128 / 256 / 320 kbps) | **Output:** FLAC (~800+ kbps effective bitrate)
 
+![](/media/recordings/localhost-backend.gif)
+
 ## How It Works
 
 A GAN (Generative Adversarial Network) learns to reverse compression artifacts:
@@ -61,6 +63,9 @@ uv sync
 # Frontend dependencies
 cd frontend && bun install
 ```
+
+> The model weights are hosted on HuggingFace and here's the [link](https://huggingface.co/rohanprasen-kedari/audioreconstruction/tree/main/checkpoints/best) to the model weights folder. Download the `generator.safetensors` for local testing and inference and paste it under `./model/checkpoints/best/` folder
+
 
 ### Run
 

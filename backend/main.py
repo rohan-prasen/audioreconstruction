@@ -84,7 +84,7 @@ def _reconstruct_sf(generator: Generator, input_path: Path, device: torch.device
     return torch.cat(chunks, dim=-1)
 
 
-app = FastAPI(title="Audio Reconstruction", lifespan=lifespan)
+app = FastAPI(title="Audio Reconstruction", description="The API backend which serves the GAN model which will reconstruct the lossless audio signals from the inputted lossy audio", version="1.0.0", lifespan=lifespan)
 
 @app.get("/")
 async def hello():
