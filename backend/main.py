@@ -13,10 +13,10 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from torchaudio.functional import resample
 
-logger = logging.getLogger(__name__)
-
 from model.evaluate import load_generator
 from model.generator import Generator
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
