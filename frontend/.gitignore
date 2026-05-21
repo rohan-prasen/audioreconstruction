@@ -22,5 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
+.env
+.env.*
+!.env.example
 design.html

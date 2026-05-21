@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import LightRays from "./LightRays";
 
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "";
 const MAX_SIZE = 25 * 1024 * 1024;
 const WAVEFORM_BARS = [
     42, 80, 30, 68, 48, 92, 36, 74, 58, 88, 26, 64, 52, 95, 44, 76, 34, 84,
@@ -147,7 +148,7 @@ export default function App() {
             try {
                 const form = new FormData();
                 form.append("file", file);
-                const res = await fetch("/api/model-serve", {
+                const res = await fetch(`${API_BASE}/model-serve`, {
                     method: "POST",
                     body: form,
                 });
