@@ -3,8 +3,18 @@ import LightRays from "./LightRays";
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "";
 const MAX_SIZE = 25 * 1024 * 1024;
-const RETRY_DELAYS = [5000, 10000, 20000];
-const MAX_RETRIES = RETRY_DELAYS.length;
+const MAX_RETRIES = 5;
+const HEALTH_POLL_MS = 30000;
+
+function getRetryDelay(attempt, retryAfterHeader) {
+    if (retryAfterHeader) {
+        const secs = parseInt(retryAfterHeader, 10);
+        if (!Number.isNaN(secs)) return secs * 1000;
+    }
+    const base = 3000;
+    const delay = Math.min(base * Math.pow(2, attempt), 30000);
+    return delay + Math.random() * 1000;
+}
 const WAVEFORM_BARS = [
     42, 80, 30, 68, 48, 92, 36, 74, 58, 88, 26, 64, 52, 95, 44, 76, 34, 84,
     60,
@@ -43,10 +53,12 @@ export default function App() {
     });
     const [theme, setThemeState] = useState("light");
     const [jobMap, setJobMap] = useState({});
+    const [serverStatus, setServerStatus] = useState("unknown");
     const dragDepthRef = useRef(0);
     const addFilesRef = useRef(null);
     const processingRef = useRef(false);
     const jobMapRef = useRef(jobMap);
+    const abortControllersRef = useRef({});
     jobMapRef.current = jobMap;
 
     const processing = files.some((f) => {
@@ -104,6 +116,9 @@ export default function App() {
             const removed = prev[index];
             const key = fileKey(removed);
 
+            abortControllersRef.current[key]?.abort();
+            delete abortControllersRef.current[key];
+
             setJobMap((prevMap) => {
                 const next = { ...prevMap };
                 if (next[key]?.result?.url)
@@ -143,6 +158,9 @@ export default function App() {
 
         for (const file of filesToProcess) {
             const key = fileKey(file);
+            const controller = new AbortController();
+            abortControllersRef.current[key] = controller;
+
             setJobMap((prev) => ({
                 ...prev,
                 [key]: { status: "processing" },
@@ -150,16 +168,25 @@ export default function App() {
 
             let succeeded = false;
             for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                if (controller.signal.aborted) break;
                 try {
                     const form = new FormData();
                     form.append("file", file);
                     const res = await fetch(`${API_BASE}/model-serve`, {
                         method: "POST",
                         body: form,
+                        signal: controller.signal,
                     });
 
-                    if (res.status === 429 && attempt < MAX_RETRIES) {
-                        const delay = RETRY_DELAYS[attempt];
+                    const retryable =
+                        res.status === 429 || res.status === 503;
+                    if (retryable && attempt < MAX_RETRIES) {
+                        const retryAfter =
+                            res.headers.get("retry-after");
+                        const delay = getRetryDelay(
+                            attempt,
+                            retryAfter,
+                        );
                         setJobMap((prev) => ({
                             ...prev,
                             [key]: { status: "waiting" },
@@ -171,7 +198,8 @@ export default function App() {
                     if (!res.ok) {
                         const body = await res.json().catch(() => null);
                         throw new Error(
-                            body?.detail ?? `Server error (${res.status})`,
+                            body?.detail ??
+                                `Server error (${res.status})`,
                         );
                     }
 
@@ -183,29 +211,46 @@ export default function App() {
                         disposition.match(/filename="?([^"]+)"?/);
                     const outputName =
                         nameMatch?.[1] ??
-                        file.name.replace(/\.\w+$/, "_reconstructed.flac");
+                        file.name.replace(
+                            /\.\w+$/,
+                            "_reconstructed.flac",
+                        );
 
                     setJobMap((prev) => ({
                         ...prev,
                         [key]: {
                             status: "done",
-                            result: { url, name: outputName, size: blob.size },
+                            result: {
+                                url,
+                                name: outputName,
+                                size: blob.size,
+                            },
                         },
                     }));
                     succeeded = true;
                     break;
                 } catch (err) {
+                    if (err.name === "AbortError") break;
                     if (attempt < MAX_RETRIES) continue;
                     setJobMap((prev) => ({
                         ...prev,
                         [key]: {
                             status: "error",
-                            error: err.message || "Reconstruction failed",
+                            error:
+                                err.message ||
+                                "Reconstruction failed",
                         },
                     }));
                 }
             }
-            if (!succeeded && jobMapRef.current[key]?.status === "waiting") {
+
+            delete abortControllersRef.current[key];
+
+            if (
+                !succeeded &&
+                !controller.signal.aborted &&
+                jobMapRef.current[key]?.status === "waiting"
+            ) {
                 setJobMap((prev) => ({
                     ...prev,
                     [key]: {
@@ -288,7 +333,36 @@ export default function App() {
     }, []);
 
     useEffect(() => {
+        let active = true;
+        let failCount = 0;
+        const check = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/health-check`);
+                if (res.ok && active) {
+                    const data = await res.json();
+                    setServerStatus(data.status === "ok" ? "online" : "degraded");
+                    failCount = 0;
+                } else {
+                    failCount++;
+                }
+            } catch {
+                failCount++;
+            }
+            if (failCount >= 3 && active) setServerStatus("offline");
+        };
+        check();
+        const interval = setInterval(check, HEALTH_POLL_MS);
         return () => {
+            active = false;
+            clearInterval(interval);
+        };
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            Object.values(abortControllersRef.current).forEach((c) =>
+                c.abort(),
+            );
             Object.values(jobMapRef.current).forEach((job) => {
                 if (job.result?.url) URL.revokeObjectURL(job.result.url);
             });
@@ -572,18 +646,38 @@ export default function App() {
                                             className="reconstruct-button"
                                             type="button"
                                             onClick={reconstructAll}
-                                            disabled={processing}
+                                            disabled={
+                                                processing ||
+                                                serverStatus === "offline"
+                                            }
+                                            title={
+                                                serverStatus === "offline"
+                                                    ? "Server is offline"
+                                                    : undefined
+                                            }
                                         >
                                             {processing
                                                 ? "Reconstructing…"
-                                                : "Reconstruct"}
+                                                : serverStatus === "offline"
+                                                  ? "Server Offline"
+                                                  : "Reconstruct"}
                                         </button>
                                     )}
                                 </>
                             ) : (
                                 <>
                                     <span>Drag state: page-wide capture</span>
-                                    <span>Validation: type + size</span>
+                                    <span
+                                        className={`server-status ${serverStatus}`}
+                                    >
+                                        {serverStatus === "online"
+                                            ? "Server online"
+                                            : serverStatus === "offline"
+                                              ? "Server offline"
+                                              : serverStatus === "degraded"
+                                                ? "Server degraded"
+                                                : "Checking server..."}
+                                    </span>
                                 </>
                             )}
                         </footer>
