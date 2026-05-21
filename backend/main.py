@@ -10,6 +10,7 @@ import soundfile as sf
 import torch
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from torchaudio.functional import resample
 
@@ -86,6 +87,14 @@ def _reconstruct_sf(generator: Generator, input_path: Path, device: torch.device
 
 
 app = FastAPI(title="Audio Reconstruction", description="The API backend which serves the GAN model which will reconstruct the lossless audio signals from the inputted lossy audio", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Accept", "Content-Type"],
+)
 
 @app.get("/")
 async def hello():
