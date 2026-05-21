@@ -6,12 +6,11 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "lint": "biome .",
+        "lint": "eslint .",
         "preview": "vite preview"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.3.0",
-        "biome": "^0.3.3",
         "framer-motion": "^12.39.0",
         "ogl": "^1.0.11",
         "react": "^19.2.6",
