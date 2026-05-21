@@ -1,6 +1,6 @@
 # Usage
 
-This  directory only contains one file `test.py` which is just a comparison script that will give us how identical are the reconstructed and actual FLAC audios are. 
+This  directory only contains one file `test.py` which is just a comparison script that will give us how identical the reconstructed and actual FLAC audios are. 
 
 The command to use this script is as follows:
 
