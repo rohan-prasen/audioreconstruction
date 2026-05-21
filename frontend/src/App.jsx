@@ -3,6 +3,8 @@ import LightRays from "./LightRays";
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "";
 const MAX_SIZE = 25 * 1024 * 1024;
+const RETRY_DELAYS = [5000, 10000, 20000];
+const MAX_RETRIES = RETRY_DELAYS.length;
 const WAVEFORM_BARS = [
     42, 80, 30, 68, 48, 92, 36, 74, 58, 88, 26, 64, 52, 95, 44, 76, 34, 84,
     60,
@@ -47,9 +49,10 @@ export default function App() {
     const jobMapRef = useRef(jobMap);
     jobMapRef.current = jobMap;
 
-    const processing = files.some(
-        (f) => jobMap[fileKey(f)]?.status === "processing",
-    );
+    const processing = files.some((f) => {
+        const s = jobMap[fileKey(f)]?.status;
+        return s === "processing" || s === "waiting";
+    });
     const doneCount = files.filter(
         (f) => jobMap[fileKey(f)]?.status === "done",
     ).length;
@@ -145,43 +148,69 @@ export default function App() {
                 [key]: { status: "processing" },
             }));
 
-            try {
-                const form = new FormData();
-                form.append("file", file);
-                const res = await fetch(`${API_BASE}/model-serve`, {
-                    method: "POST",
-                    body: form,
-                });
+            let succeeded = false;
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    const form = new FormData();
+                    form.append("file", file);
+                    const res = await fetch(`${API_BASE}/model-serve`, {
+                        method: "POST",
+                        body: form,
+                    });
 
-                if (!res.ok) {
-                    const body = await res.json().catch(() => null);
-                    throw new Error(
-                        body?.detail ?? `Server error (${res.status})`,
-                    );
+                    if (res.status === 429 && attempt < MAX_RETRIES) {
+                        const delay = RETRY_DELAYS[attempt];
+                        setJobMap((prev) => ({
+                            ...prev,
+                            [key]: { status: "waiting" },
+                        }));
+                        await new Promise((r) => setTimeout(r, delay));
+                        continue;
+                    }
+
+                    if (!res.ok) {
+                        const body = await res.json().catch(() => null);
+                        throw new Error(
+                            body?.detail ?? `Server error (${res.status})`,
+                        );
+                    }
+
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const disposition =
+                        res.headers.get("content-disposition") ?? "";
+                    const nameMatch =
+                        disposition.match(/filename="?([^"]+)"?/);
+                    const outputName =
+                        nameMatch?.[1] ??
+                        file.name.replace(/\.\w+$/, "_reconstructed.flac");
+
+                    setJobMap((prev) => ({
+                        ...prev,
+                        [key]: {
+                            status: "done",
+                            result: { url, name: outputName, size: blob.size },
+                        },
+                    }));
+                    succeeded = true;
+                    break;
+                } catch (err) {
+                    if (attempt < MAX_RETRIES) continue;
+                    setJobMap((prev) => ({
+                        ...prev,
+                        [key]: {
+                            status: "error",
+                            error: err.message || "Reconstruction failed",
+                        },
+                    }));
                 }
-
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const disposition =
-                    res.headers.get("content-disposition") ?? "";
-                const nameMatch = disposition.match(/filename="?([^"]+)"?/);
-                const outputName =
-                    nameMatch?.[1] ??
-                    file.name.replace(/\.\w+$/, "_reconstructed.flac");
-
-                setJobMap((prev) => ({
-                    ...prev,
-                    [key]: {
-                        status: "done",
-                        result: { url, name: outputName, size: blob.size },
-                    },
-                }));
-            } catch (err) {
+            }
+            if (!succeeded && jobMapRef.current[key]?.status === "waiting") {
                 setJobMap((prev) => ({
                     ...prev,
                     [key]: {
                         status: "error",
-                        error: err.message || "Reconstruction failed",
+                        error: "Server busy — retries exhausted. Try again later.",
                     },
                 }));
             }
@@ -281,9 +310,10 @@ export default function App() {
         }
     }
 
-    const processingIndex = files.findIndex(
-        (f) => jobMap[fileKey(f)]?.status === "processing",
-    );
+    const processingIndex = files.findIndex((f) => {
+        const s = jobMap[fileKey(f)]?.status;
+        return s === "processing" || s === "waiting";
+    });
 
     return (
         <>
@@ -462,7 +492,12 @@ export default function App() {
                                                         )}
                                                     </div>
                                                     {status ===
-                                                    "processing" ? (
+                                                        "waiting" ? (
+                                                        <span className="file-processing">
+                                                            Server busy, retrying&hellip;
+                                                        </span>
+                                                    ) : status ===
+                                                      "processing" ? (
                                                         <span className="file-processing">
                                                             Processing&hellip;
                                                         </span>
