@@ -14,7 +14,7 @@ from torchaudio.functional import resample
 
 from model.config import ModelConfig
 from model.generator import Generator
-from model.utils import load_audio, normalize_audio
+from model.utils import copy_metadata, load_audio, normalize_audio
 
 console = Console()
 
@@ -129,6 +129,7 @@ def main(
         out_file = output_path / f"{f.stem}.flac"
         audio_out = result.squeeze(0).T.numpy()
         sf.write(str(out_file), audio_out, generator.cfg.sample_rate)
+        copy_metadata(f, out_file)
 
         if reference is not None:
             ref_path = reference / f"{f.stem}.flac" if reference.is_dir() else reference

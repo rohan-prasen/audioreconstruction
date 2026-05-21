@@ -15,6 +15,7 @@ from torchaudio.functional import resample
 
 from model.evaluate import load_generator
 from model.generator import Generator
+from model.utils import copy_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +127,7 @@ async def model_serve(file: UploadFile):
         output_tmp.close()
         audio_out = result.squeeze(0).T.numpy()
         sf.write(output_tmp.name, audio_out, generator.cfg.sample_rate)
+        copy_metadata(Path(input_tmp.name), Path(output_tmp.name))
 
         flac_bytes = Path(output_tmp.name).read_bytes()
 
