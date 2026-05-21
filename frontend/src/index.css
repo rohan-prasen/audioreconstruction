@@ -559,6 +559,62 @@ h1 {
   align-items: center;
 }
 
+.cancel-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in oklch, var(--bad) 40%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--bad) 8%, var(--surface));
+  color: var(--bad);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.cancel-file:hover {
+  border-color: var(--bad);
+  background: color-mix(in oklch, var(--bad) 18%, var(--surface));
+}
+
+.cancel-file:focus-visible {
+  outline: 2px solid var(--bad);
+  outline-offset: 2px;
+}
+
+.cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid color-mix(in oklch, var(--bad) 62%, var(--border));
+  border-radius: 999px;
+  background: var(--bad);
+  color: white;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 720;
+  font-size: .88rem;
+  box-shadow: 0 12px 30px color-mix(in oklch, var(--bad) 28%, transparent);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.cancel-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 38px color-mix(in oklch, var(--bad) 35%, transparent);
+}
+
+.cancel-button:focus-visible {
+  outline: 2px solid var(--bad);
+  outline-offset: 2px;
+}
+
 .clear-button {
   min-height: 44px;
   border: 1px solid var(--border);

@@ -59,6 +59,7 @@ export default function App() {
     const processingRef = useRef(false);
     const jobMapRef = useRef(jobMap);
     const abortControllersRef = useRef({});
+    const cancelledRef = useRef(false);
     jobMapRef.current = jobMap;
 
     const processing = files.some((f) => {
@@ -147,9 +148,27 @@ export default function App() {
         setNotice({ message: "No files selected.", tone: "" });
     }
 
+    function cancelAll() {
+        cancelledRef.current = true;
+        Object.values(abortControllersRef.current).forEach((c) => c.abort());
+        abortControllersRef.current = {};
+        setJobMap((prev) => {
+            const next = { ...prev };
+            for (const k of Object.keys(next)) {
+                if (next[k].status === "processing" || next[k].status === "waiting") {
+                    delete next[k];
+                }
+            }
+            return next;
+        });
+        processingRef.current = false;
+        setNotice({ message: "Reconstruction cancelled.", tone: "" });
+    }
+
     async function reconstructAll() {
         if (processingRef.current) return;
         processingRef.current = true;
+        cancelledRef.current = false;
 
         const filesToProcess = files.filter((f) => {
             const status = jobMap[fileKey(f)]?.status;
@@ -157,6 +176,7 @@ export default function App() {
         });
 
         for (const file of filesToProcess) {
+            if (cancelledRef.current) break;
             const key = fileKey(file);
             const controller = new AbortController();
             abortControllersRef.current[key] = controller;
@@ -179,7 +199,7 @@ export default function App() {
                     });
 
                     const retryable =
-                        res.status === 429 || res.status === 503;
+                        res.status === 429 || res.status === 503 || res.status === 504;
                     if (retryable && attempt < MAX_RETRIES) {
                         const retryAfter =
                             res.headers.get("retry-after");
@@ -230,7 +250,14 @@ export default function App() {
                     succeeded = true;
                     break;
                 } catch (err) {
-                    if (err.name === "AbortError") break;
+                    if (err.name === "AbortError") {
+                        setJobMap((prev) => {
+                            const next = { ...prev };
+                            delete next[key];
+                            return next;
+                        });
+                        break;
+                    }
                     if (attempt < MAX_RETRIES) continue;
                     setJobMap((prev) => ({
                         ...prev,
@@ -567,14 +594,38 @@ export default function App() {
                                                     </div>
                                                     {status ===
                                                         "waiting" ? (
-                                                        <span className="file-processing">
-                                                            Server busy, retrying&hellip;
-                                                        </span>
+                                                        <div className="file-actions">
+                                                            <span className="file-processing">
+                                                                Retrying&hellip;
+                                                            </span>
+                                                            <button
+                                                                className="cancel-file"
+                                                                type="button"
+                                                                aria-label={`Cancel ${file.name}`}
+                                                                onClick={() =>
+                                                                    abortControllersRef.current[key]?.abort()
+                                                                }
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        </div>
                                                     ) : status ===
                                                       "processing" ? (
-                                                        <span className="file-processing">
-                                                            Processing&hellip;
-                                                        </span>
+                                                        <div className="file-actions">
+                                                            <span className="file-processing">
+                                                                Processing&hellip;
+                                                            </span>
+                                                            <button
+                                                                className="cancel-file"
+                                                                type="button"
+                                                                aria-label={`Cancel ${file.name}`}
+                                                                onClick={() =>
+                                                                    abortControllersRef.current[key]?.abort()
+                                                                }
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        </div>
                                                     ) : status === "done" ? (
                                                         <div className="file-actions">
                                                             <button
@@ -641,13 +692,20 @@ export default function App() {
                                         >
                                             Clear queue
                                         </button>
+                                    ) : processing ? (
+                                        <button
+                                            className="cancel-button"
+                                            type="button"
+                                            onClick={cancelAll}
+                                        >
+                                            Cancel
+                                        </button>
                                     ) : (
                                         <button
                                             className="reconstruct-button"
                                             type="button"
                                             onClick={reconstructAll}
                                             disabled={
-                                                processing ||
                                                 serverStatus === "offline"
                                             }
                                             title={
@@ -656,11 +714,9 @@ export default function App() {
                                                     : undefined
                                             }
                                         >
-                                            {processing
-                                                ? "Reconstructing…"
-                                                : serverStatus === "offline"
-                                                  ? "Server Offline"
-                                                  : "Reconstruct"}
+                                            {serverStatus === "offline"
+                                                ? "Server Offline"
+                                                : "Reconstruct"}
                                         </button>
                                     )}
                                 </>
