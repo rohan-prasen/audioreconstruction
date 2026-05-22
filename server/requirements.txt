@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+slowapi
+soundfile
+numpy
+safetensors
+torch
+torchaudio
+modal

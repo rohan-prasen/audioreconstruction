@@ -28,6 +28,9 @@ dependencies = [
     "tqdm>=4.67.3",
     "uvicorn>=0.47.0",
     "packaging>=26.2",
+    "modal>=1.4.3",
+    "librosa>=0.11.0",
+    "slowapi>=0.1.9",
 ]
 
 [dependency-groups]
