@@ -12,4 +12,10 @@ wheels/
 # Virtual environments
 .venv
 
+# outputfiles
 output/
+
+# model checkpoints
+model/checkpoints/*
+!model/checkpoints/best/*
+!model/checkpoints/config.json

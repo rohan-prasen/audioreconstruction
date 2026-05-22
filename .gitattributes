@@ -1,0 +1,5 @@
+model/checkpoints/best/generator.pt filter=lfs diff=lfs merge=lfs -text
+model/checkpoints/best/generator.safetensors filter=lfs diff=lfs merge=lfs -text
+model/checkpoints/best/training_state.pt filter=lfs diff=lfs merge=lfs -text
+model/checkpoints/best/discriminator.pt filter=lfs diff=lfs merge=lfs -text
+model/checkpoints/best/discriminator.safetensors filter=lfs diff=lfs merge=lfs -text
