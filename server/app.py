@@ -247,7 +247,7 @@ async def health_check(request: Request):
 
 
 @app.post("/model-serve")
-@limiter.limit("2/minute")
+@limiter.limit("10/minute")
 async def model_serve(request: Request, file: UploadFile):
     if not app.state.ready:
         raise HTTPException(503, "Model not loaded.")
