@@ -3,3 +3,4 @@ model/checkpoints/best/generator.safetensors filter=lfs diff=lfs merge=lfs -text
 model/checkpoints/best/training_state.pt filter=lfs diff=lfs merge=lfs -text
 model/checkpoints/best/discriminator.pt filter=lfs diff=lfs merge=lfs -text
 model/checkpoints/best/discriminator.safetensors filter=lfs diff=lfs merge=lfs -text
+media/recordings/localhost-backend.gif filter=lfs diff=lfs merge=lfs -text
