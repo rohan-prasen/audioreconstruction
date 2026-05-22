@@ -127,24 +127,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Audio Reconstruction", version="1.0.0", lifespan=lifespan)
 
-limiter = Limiter(
-    key_func=get_remote_address
-)
+limiter = Limiter(key_func=get_remote_address)
 
 app.state.limiter = limiter
 
-app.add_exception_handler(
-    RateLimitExceeded,
-    _rate_limit_exceeded_handler
-)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://audioreconstruction.vercel.app"],
     allow_credentials=False,
-    allow_methods=["GET", "HEAD","POST"],
+    allow_methods=["GET", "HEAD", "POST"],
     allow_headers=["Accept", "Content-Type"],
 )
 
@@ -287,7 +282,10 @@ async def model_serve(request: Request, file: UploadFile):
 
         app.state.cancel.clear()
         result = _run_inference(
-            generator, device, input_path, app.state.cancel,
+            generator,
+            device,
+            input_path,
+            app.state.cancel,
             time.monotonic() + INFERENCE_TIMEOUT,
         )
 
