@@ -20,4 +20,5 @@ model/checkpoints/*
 !model/checkpoints/best/*
 !model/checkpoints/config.json
 
-media/recordings/
+media/recordings/*
+!media/recordings/*.gif
