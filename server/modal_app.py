@@ -37,11 +37,12 @@ app = modal.App("audioreconstruction")
 @app.function(
     image=image,
     gpu="T4",
+    cpu=2.0,
     timeout=1800,
     scaledown_window=300,
     min_containers=0,
-    max_containers=1,
-    memory=8192,
+    max_containers=2,
+    memory=4096,
 )
 @modal.asgi_app()
 def fastapi_app():
