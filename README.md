@@ -4,7 +4,7 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 
 **Input:** MP3 (128 / 256 / 320 kbps) | **Output:** FLAC (~800+ kbps effective bitrate)
 
-![](/media/recordings/localhost-backend.gif)
+![](/media/recordings/demo.gif)
 
 ## How It Works
 
