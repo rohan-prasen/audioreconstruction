@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "";
 const MAX_SIZE = 25 * 1024 * 1024;
 const MAX_RETRIES = 5;
-const HEALTH_POLL_MS = 30000;
 
 function getRetryDelay(attempt, retryAfterHeader) {
     if (retryAfterHeader) {
@@ -128,6 +127,18 @@ function FileCard({ file, job, index, onRemove, onCancel, onDownload }) {
     );
 }
 
+function WakeUpToast({ visible }) {
+    return (
+        <div className={`wakeup-toast${visible ? "" : " hidden"}`} role="status" aria-live="polite">
+            <span className="wakeup-spinner" aria-hidden="true" />
+            <span className="wakeup-text">
+                <span className="wakeup-title">Waking up the model…</span>
+                <span className="wakeup-sub">First request takes ~30–60 s</span>
+            </span>
+        </div>
+    );
+}
+
 export default function App() {
     const [files, setFiles] = useState([]);
     const [notice, setNotice] = useState({
@@ -135,7 +146,6 @@ export default function App() {
         tone: "",
     });
     const [jobMap, setJobMap] = useState({});
-    const [serverStatus, setServerStatus] = useState("unknown");
     const [themeChoice, setThemeChoice] = useState(
         () => localStorage.getItem("audio-reconstruction-theme") || "system"
     );
@@ -160,6 +170,8 @@ export default function App() {
     // eslint-disable-next-line no-unused-vars
     const dark = activeTheme === "dark"; // kept for any future logic that references it
 
+    const coldStarting = Object.values(jobMap).some((j) => j.status === "waiting");
+
     const processing = files.some((f) => {
         const s = jobMap[fileKey(f)]?.status;
         return s === "processing" || s === "waiting";
@@ -179,6 +191,8 @@ export default function App() {
     const addFiles = useCallback((fileSet) => {
         const incoming = Array.from(fileSet || []);
         if (!incoming.length) return;
+
+        fetch(`${API_BASE}/health-check`).catch(() => {});
 
         setFiles((prev) => {
             const errors = [];
@@ -488,32 +502,6 @@ export default function App() {
         };
     }, []);
 
-    // Health check polling
-    useEffect(() => {
-        let active = true;
-        let failCount = 0;
-        const check = async () => {
-            try {
-                const res = await fetch(`${API_BASE}/health-check`);
-                if (res.ok && active) {
-                    const data = await res.json();
-                    setServerStatus(data.status === "ok" ? "online" : "degraded");
-                    failCount = 0;
-                } else {
-                    failCount++;
-                }
-            } catch {
-                failCount++;
-            }
-            if (failCount >= 3 && active) setServerStatus("offline");
-        };
-        check();
-        const interval = setInterval(check, HEALTH_POLL_MS);
-        return () => {
-            active = false;
-            clearInterval(interval);
-        };
-    }, []);
 
     // Cleanup on unmount: abort requests + revoke object URLs
     useEffect(() => {
@@ -528,6 +516,8 @@ export default function App() {
     }, []);
 
     return (
+        <>
+        <WakeUpToast visible={coldStarting} />
         <main
             className="app"
             onDragOver={(e) => {
@@ -680,10 +670,8 @@ export default function App() {
                                     className="start-button"
                                     type="button"
                                     onClick={reconstructAll}
-                                    disabled={serverStatus === "offline"}
-                                    title={serverStatus === "offline" ? "Server is offline" : undefined}
                                 >
-                                    {serverStatus === "offline" ? "Server Offline" : "Start reconstruction"}
+                                    Start reconstruction
                                 </button>
                             )}
                         </div>
@@ -691,5 +679,6 @@ export default function App() {
                 </div>
             </section>
         </main>
+        </>
     );
 }
