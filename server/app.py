@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 import gc
-import hashlib
 import logging
 import os
 import sys
 import tempfile
-import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,7 +22,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from model.evaluate import load_generator
+from batcher import InferenceBatcher
+from model.evaluate import load_generator, warmup_generator
 
 torch.set_num_threads(2)
 
@@ -56,49 +56,79 @@ UPLOAD_CHUNK = 1024 * 1024
 MODEL_CHECKPOINT_DIR = Path("/checkpoints/best/")
 TEMP_DIR = Path(tempfile.gettempdir()) / "audioreconstruction"
 INFERENCE_TIMEOUT = 180
-CHECKPOINT_TTL = 600
 
 
-class _InferenceCancelled(Exception):
-    pass
+def _preprocess_audio(
+    content: bytes,
+    cfg,
+) -> list[tuple[torch.Tensor, int]]:
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=str(TEMP_DIR))
+    tmp.write(content)
+    tmp.close()
+    input_path = Path(tmp.name)
+
+    try:
+        info = sf.info(str(input_path))
+        duration = info.frames / info.samplerate
+        if duration > 360:
+            raise ValueError("Audio exceeds 6 minute limit.")
+
+        waveform = load_audio_sf(
+            input_path, target_sr=cfg.sample_rate, channels=cfg.in_channels
+        )
+    finally:
+        input_path.unlink(missing_ok=True)
+
+    peak = waveform.abs().max()
+    if peak > 0:
+        waveform = waveform / peak
+
+    seg_len = cfg.segment_length
+    length = waveform.shape[-1]
+    segments: list[tuple[torch.Tensor, int]] = []
+
+    if length <= seg_len:
+        padded = torch.nn.functional.pad(waveform, (0, seg_len - length))
+        segments.append((padded, length))
+    else:
+        for start in range(0, length, seg_len):
+            chunk = waveform[:, start : start + seg_len]
+            actual_len = chunk.shape[-1]
+            if actual_len < seg_len:
+                chunk = torch.nn.functional.pad(chunk, (0, seg_len - actual_len))
+            segments.append((chunk, min(seg_len, length - start)))
+
+    del waveform
+    return segments
 
 
-class _InferenceTimeout(Exception):
-    pass
+def _encode_flac(result: torch.Tensor, sample_rate: int) -> bytes:
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False, dir=str(TEMP_DIR))
+    tmp.close()
+    output_path = Path(tmp.name)
+    try:
+        write_flac(result, output_path, sample_rate)
+        return output_path.read_bytes()
+    finally:
+        output_path.unlink(missing_ok=True)
 
 
-def _file_hash(path: Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while block := f.read(65536):
-            h.update(block)
-    return h.hexdigest()[:16]
-
-
-def _save_checkpoint(ckpt_path: Path, chunks: list, next_start: int, length: int):
-    torch.save(
-        {"chunks": chunks, "next_start": next_start, "length": length},
-        ckpt_path,
-    )
-
-
-def _clean_stale_checkpoints():
-    now = time.time()
-    for f in TEMP_DIR.glob("*_ckpt.pt"):
-        try:
-            if now - f.stat().st_mtime > CHECKPOINT_TTL:
-                f.unlink(missing_ok=True)
-        except Exception:
-            pass
+def _get_model_cfg(generator):
+    if hasattr(generator, "cfg"):
+        return generator.cfg
+    if hasattr(generator, "_orig_mod") and hasattr(generator._orig_mod, "cfg"):
+        return generator._orig_mod.cfg
+    from model.config import ModelConfig
+    return ModelConfig()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
     for f in TEMP_DIR.glob("*"):
-        if not f.name.endswith("_ckpt.pt"):
-            f.unlink(missing_ok=True)
-    _clean_stale_checkpoints()
+        f.unlink(missing_ok=True)
 
     logger.info("===== Startup | PID=%d =====", os.getpid())
 
@@ -109,16 +139,30 @@ async def lifespan(app: FastAPI):
         t0 = time.monotonic()
         generator = load_generator(MODEL_CHECKPOINT_DIR, device)
         logger.info("Model loaded in %.1fs", time.monotonic() - t0)
+
+        cfg = _get_model_cfg(generator)
+
+        t0 = time.monotonic()
+        warmup_generator(generator, device, cfg)
+        logger.info("Warmup done in %.1fs", time.monotonic() - t0)
+
+        batcher = InferenceBatcher(generator=generator, device=device)
+        await batcher.start()
+
         app.state.generator = generator
         app.state.device = device
+        app.state.batcher = batcher
+        app.state.cfg = cfg
         app.state.ready = True
     except Exception as exc:
         logger.error("Startup failed: %s", exc)
         app.state.ready = False
-
-    app.state.cancel = threading.Event()
+        app.state.batcher = None
 
     yield
+
+    if getattr(app.state, "batcher", None) is not None:
+        await app.state.batcher.stop()
 
     for f in TEMP_DIR.glob("*"):
         f.unlink(missing_ok=True)
@@ -142,88 +186,6 @@ app.add_middleware(
     allow_methods=["GET", "HEAD", "POST"],
     allow_headers=["Accept", "Content-Type"],
 )
-
-
-@torch.inference_mode()
-def _run_inference(
-    generator,
-    device: torch.device,
-    input_path: Path,
-    cancel: threading.Event,
-    deadline: float,
-) -> torch.Tensor:
-    cfg = generator.cfg
-    waveform = load_audio_sf(
-        input_path, target_sr=cfg.sample_rate, channels=cfg.in_channels
-    )
-    peak = waveform.abs().max()
-    if peak > 0:
-        waveform = waveform / peak
-
-    seg_len = cfg.segment_length
-    length = waveform.shape[-1]
-
-    file_hash = _file_hash(input_path)
-    ckpt_path = TEMP_DIR / f"{file_hash}_ckpt.pt"
-
-    if length <= seg_len:
-        padded = torch.nn.functional.pad(waveform, (0, seg_len - length))
-        inp = padded.unsqueeze(0).to(device)
-        out = generator(inp)
-        result = out.squeeze(0).cpu()[:, :length]
-        del inp, out, padded, waveform
-        ckpt_path.unlink(missing_ok=True)
-        return result
-
-    chunks: list[torch.Tensor] = []
-    start_idx = 0
-
-    if ckpt_path.exists():
-        try:
-            ckpt = torch.load(ckpt_path, weights_only=True)
-            if ckpt.get("length") == length:
-                chunks = ckpt["chunks"]
-                start_idx = ckpt["next_start"]
-                logger.info(
-                    "Resuming from segment %d/%d",
-                    start_idx // seg_len,
-                    (length + seg_len - 1) // seg_len,
-                )
-        except Exception:
-            pass
-
-    for start in range(start_idx, length, seg_len):
-        if cancel.is_set():
-            _save_checkpoint(ckpt_path, chunks, start, length)
-            del waveform, chunks
-            gc.collect()
-            raise _InferenceCancelled()
-
-        if time.monotonic() > deadline:
-            _save_checkpoint(ckpt_path, chunks, start, length)
-            logger.info(
-                "Deadline hit at segment %d/%d — checkpoint saved",
-                start // seg_len,
-                (length + seg_len - 1) // seg_len,
-            )
-            del waveform, chunks
-            gc.collect()
-            raise _InferenceTimeout()
-
-        chunk = waveform[:, start : start + seg_len]
-        actual_len = chunk.shape[-1]
-        if actual_len < seg_len:
-            chunk = torch.nn.functional.pad(chunk, (0, seg_len - actual_len))
-        inp = chunk.unsqueeze(0).to(device)
-        out = generator(inp)
-        chunks.append(out.squeeze(0).cpu()[:, : min(seg_len, length - start)])
-        del inp, out, chunk
-
-    del waveform
-    result = torch.cat(chunks, dim=-1)
-    del chunks
-    ckpt_path.unlink(missing_ok=True)
-    return result
 
 
 @app.get("/")
@@ -260,47 +222,42 @@ async def model_serve(request: Request, file: UploadFile):
             413, f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit."
         )
 
-    input_tmp = None
-    output_tmp = None
+    loop = asyncio.get_running_loop()
+    batcher: InferenceBatcher = app.state.batcher
+    cfg = app.state.cfg
+
     try:
-        input_tmp = tempfile.NamedTemporaryFile(
-            suffix=".mp3", delete=False, dir=str(TEMP_DIR)
+        segments = await loop.run_in_executor(
+            None, _preprocess_audio, content, cfg
         )
-        input_tmp.write(content)
-        input_tmp.close()
         del content
+    except ValueError as exc:
+        raise HTTPException(413, str(exc))
 
-        input_path = Path(input_tmp.name)
-
-        info = sf.info(str(input_path))
-        duration = info.frames / info.samplerate
-        if duration > 360:
-            raise HTTPException(413, "Audio exceeds 6 minute limit.")
-
-        generator = app.state.generator
-        device = app.state.device
-
-        app.state.cancel.clear()
-        result = _run_inference(
-            generator,
-            device,
-            input_path,
-            app.state.cancel,
-            time.monotonic() + INFERENCE_TIMEOUT,
+    try:
+        futures = [batcher.submit(seg) for seg, _ in segments]
+        results = await asyncio.wait_for(
+            asyncio.gather(*futures),
+            timeout=INFERENCE_TIMEOUT,
         )
+
+        trimmed = [
+            result[:, :actual_len]
+            for result, (_, actual_len) in zip(results, segments)
+        ]
+        del segments, results
+
+        combined = torch.cat(trimmed, dim=-1) if len(trimmed) > 1 else trimmed[0]
+        del trimmed
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-        output_tmp = tempfile.NamedTemporaryFile(
-            suffix=".flac", delete=False, dir=str(TEMP_DIR)
+        flac_bytes = await loop.run_in_executor(
+            None, _encode_flac, combined, cfg.sample_rate
         )
-        output_tmp.close()
+        del combined
 
-        write_flac(result, Path(output_tmp.name), generator.cfg.sample_rate)
-        del result
-
-        flac_bytes = Path(output_tmp.name).read_bytes()
         stem = Path(file.filename).stem if file.filename else "output"
 
         return StreamingResponse(
@@ -310,13 +267,10 @@ async def model_serve(request: Request, file: UploadFile):
                 "Content-Disposition": f'attachment; filename="{stem}_reconstructed.flac"'
             },
         )
-    except _InferenceCancelled:
-        raise HTTPException(503, "Inference cancelled.")
-    except _InferenceTimeout:
+    except asyncio.TimeoutError:
         raise HTTPException(504, "Inference timed out — file may be too big.")
+    except Exception:
+        logger.exception("Inference failed")
+        raise HTTPException(500, "Inference failed.")
     finally:
-        if input_tmp is not None:
-            Path(input_tmp.name).unlink(missing_ok=True)
-        if output_tmp is not None:
-            Path(output_tmp.name).unlink(missing_ok=True)
         gc.collect()
