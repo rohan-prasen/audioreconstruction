@@ -43,8 +43,8 @@ app = modal.App("audioreconstruction")
     min_containers=0,
     max_containers=2,
     memory=4096,
-    allow_concurrent_inputs=16,
 )
+@modal.concurrent(max_inputs=16)
 @modal.asgi_app()
 def fastapi_app():
     import sys
