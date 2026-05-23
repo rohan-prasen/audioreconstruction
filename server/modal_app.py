@@ -42,7 +42,7 @@ app = modal.App("audioreconstruction")
     scaledown_window=60,
     min_containers=0,
     max_containers=2,
-    memory=4096,
+    memory=8192,
 )
 @modal.concurrent(max_inputs=16)
 @modal.asgi_app()
