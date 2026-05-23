@@ -14,6 +14,7 @@ from pathlib import Path
 import soundfile as sf
 import torch
 from audio_io import load_audio_sf, write_flac
+from batcher import InferenceBatcher
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -22,7 +23,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from batcher import InferenceBatcher
 from model.evaluate import load_generator, warmup_generator
 
 torch.set_num_threads(2)
@@ -204,7 +204,7 @@ async def health_check(request: Request):
 
 
 @app.post("/model-serve")
-@limiter.limit("10/minute")
+@limiter.limit("40/minute")
 async def model_serve(request: Request, file: UploadFile):
     if not app.state.ready:
         raise HTTPException(503, "Model not loaded.")
