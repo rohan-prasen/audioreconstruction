@@ -22,3 +22,5 @@ model/checkpoints/*
 
 media/recordings/*
 !media/recordings/*.gif
+
+design/index.html
