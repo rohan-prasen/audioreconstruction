@@ -23,7 +23,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from model.evaluate import load_generator, warmup_generator
+from model.evaluate import load_generator
 
 torch.set_num_threads(2)
 
@@ -142,11 +142,10 @@ async def lifespan(app: FastAPI):
 
         cfg = _get_model_cfg(generator)
 
-        t0 = time.monotonic()
-        warmup_generator(generator, device, cfg)
-        logger.info("Warmup done in %.1fs", time.monotonic() - t0)
-
         batcher = InferenceBatcher(generator=generator, device=device)
+        t0 = time.monotonic()
+        await batcher.warmup(cfg)
+        logger.info("Warmup done in %.1fs", time.monotonic() - t0)
         await batcher.start()
 
         app.state.generator = generator

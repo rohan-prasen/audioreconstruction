@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import logging
 from dataclasses import dataclass
 
@@ -33,6 +34,25 @@ class InferenceBatcher:
         self._max_wait_s = max_wait_s
         self._queue: asyncio.Queue[SegmentRequest | None] = asyncio.Queue()
         self._task: asyncio.Task | None = None
+        self._gpu_thread = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+    async def warmup(self, cfg) -> None:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(self._gpu_thread, self._warmup_sync, cfg)
+
+    @torch.inference_mode()
+    def _warmup_sync(self, cfg) -> None:
+        logger.info("Warming up model (batch=%d, seg=%d)...", self._max_batch, cfg.segment_length)
+        dummy = torch.randn(
+            self._max_batch, cfg.in_channels, cfg.segment_length,
+            device=self._device,
+        )
+        with torch.amp.autocast("cuda", enabled=self._device.type == "cuda"):
+            self._generator(dummy)
+        del dummy
+        if self._device.type == "cuda":
+            torch.cuda.empty_cache()
+        logger.info("Warmup complete")
 
     async def start(self) -> None:
         self._task = asyncio.create_task(self._worker_loop())
@@ -45,6 +65,7 @@ class InferenceBatcher:
             await asyncio.wait_for(self._task, timeout=10.0)
         except asyncio.TimeoutError:
             self._task.cancel()
+        self._gpu_thread.shutdown(wait=False)
 
     async def submit(self, segment: torch.Tensor) -> torch.Tensor:
         loop = asyncio.get_running_loop()
@@ -94,7 +115,7 @@ class InferenceBatcher:
 
         try:
             loop = asyncio.get_running_loop()
-            outputs = await loop.run_in_executor(None, self._gpu_forward, inputs)
+            outputs = await loop.run_in_executor(self._gpu_thread, self._gpu_forward, inputs)
 
             for i, req in enumerate(batch):
                 if not req.future.cancelled():
