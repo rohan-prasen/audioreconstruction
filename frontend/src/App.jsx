@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "";
 const MAX_SIZE = 25 * 1024 * 1024;
+const MAX_DURATION = 360;
+const MAX_FILES = 5;
 const MAX_RETRIES = 5;
 
 function getRetryDelay(attempt, retryAfterHeader) {
@@ -16,6 +18,12 @@ function getRetryDelay(attempt, retryAfterHeader) {
 
 function formatSize(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatDuration(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function isMp3(file) {
@@ -33,6 +41,23 @@ function validateFile(file) {
     if (file.size > MAX_SIZE)
         return `${file.name} rejected: ${formatSize(file.size)} exceeds 25 MB.`;
     return "";
+}
+
+function getAudioDuration(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const audio = new Audio();
+        audio.preload = "metadata";
+        audio.onloadedmetadata = () => {
+            URL.revokeObjectURL(url);
+            resolve(audio.duration);
+        };
+        audio.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Could not read audio metadata."));
+        };
+        audio.src = url;
+    });
 }
 
 function fileKey(file) {
@@ -68,62 +93,119 @@ function DesktopIcon(props) {
     );
 }
 
-function FileCard({ file, job, index, onRemove, onCancel, onDownload }) {
-    const status = job?.status; // "processing" | "waiting" | "done" | "error" | undefined
+function QueueCard({ items, jobMap, onRemove, onCancel, onDownload }) {
+    const [expanded, setExpanded] = useState(false);
+    const innerRef = useRef(null);
+    const firstRowRef = useRef(null);
 
-    const cardClass = [
-        "file-card",
-        status === "done" ? "done" : "",
-        status === "error" ? "failed" : "",
-    ].filter(Boolean).join(" ");
+    const showExpand = items.length > 1;
+    const isCollapsed = showExpand && !expanded;
 
-    const progress = status === "done" ? 100 : (status === "processing" || status === "waiting") ? 42 : 0;
-    const isWorking = status === "processing" || status === "waiting";
+    const statusKey = items.map(i => jobMap[fileKey(i.file)]?.status || "").join(",");
 
-    const statusLabel = status === "processing" ? "Processing…"
-        : status === "waiting" ? "Retrying…"
-        : status === "done" ? "Done"
-        : status === "error" ? "Failed"
-        : "Ready";
+    useLayoutEffect(() => {
+        const inner = innerRef.current;
+        if (!inner) return;
+        if (!showExpand) {
+            inner.style.maxHeight = "";
+            return;
+        }
+        if (isCollapsed && firstRowRef.current) {
+            inner.style.maxHeight = `${firstRowRef.current.offsetHeight + 20}px`;
+        } else {
+            inner.style.maxHeight = `${inner.scrollHeight}px`;
+        }
+    }, [showExpand, isCollapsed, items.length, statusKey]);
 
     return (
-        <article
-            className={cardClass + (isWorking ? " " + (status === "waiting" ? "uploading" : "processing") : "")}
-            style={{ "--progress": `${progress}%` }}
-        >
-            <div className="file-top">
-                <div className="filename" title={file.name}>{file.name}</div>
-                <div className="file-actions">
-                    <span className="status" aria-live="polite">{statusLabel}</span>
-                    {isWorking && (
-                        <button className="mini-action secondary" type="button" onClick={onCancel}>
-                            Cancel
-                        </button>
-                    )}
-                    {status === "done" && (
-                        <button className="mini-action" type="button" onClick={onDownload}>
-                            Download
-                        </button>
-                    )}
-                    {!isWorking && (
-                        <button
-                            className="remove-btn"
-                            type="button"
-                            aria-label={`Remove ${file.name}`}
-                            onClick={() => onRemove(index)}
+        <div className={`queue-card${isCollapsed ? " collapsed" : ""}`}>
+            <div
+                className="queue-card-inner"
+                ref={innerRef}
+            >
+                {items.map((item, index) => {
+                    const key = fileKey(item.file);
+                    const job = jobMap[key];
+                    const status = job?.status;
+                    const isWorking = status === "processing" || status === "waiting";
+                    const isDone = status === "done";
+                    const isError = status === "error";
+
+                    const displayName = isDone && job.result?.name ? job.result.name : item.file.name;
+                    const displaySize = isDone && job.result?.size ? formatSize(job.result.size) : formatSize(item.file.size);
+
+                    const statusLabel = status === "processing" ? "Processing…"
+                        : status === "waiting" ? "Retrying…"
+                        : status === "done" ? "Done"
+                        : status === "error" ? "Failed"
+                        : "Ready";
+
+                    const progress = isDone ? 100 : isWorking ? 42 : 0;
+
+                    const rowClass = [
+                        "queue-row",
+                        isDone ? "done" : "",
+                        isError ? "failed" : "",
+                        isWorking ? (status === "waiting" ? "uploading" : "processing") : "",
+                    ].filter(Boolean).join(" ");
+
+                    return (
+                        <div
+                            key={key}
+                            className={rowClass}
+                            ref={index === 0 ? firstRowRef : undefined}
+                            style={{ "--progress": `${progress}%` }}
                         >
-                            &times;
-                        </button>
-                    )}
-                </div>
+                            <div className="file-top">
+                                <div className="filename" title={displayName}>{displayName}</div>
+                                <div className="file-actions">
+                                    <span className="status" aria-live="polite">{statusLabel}</span>
+                                    {isWorking && (
+                                        <button className="mini-action secondary" type="button" onClick={() => onCancel(key)}>
+                                            Cancel
+                                        </button>
+                                    )}
+                                    {isDone && (
+                                        <button className="download-btn" type="button" aria-label={`Download ${displayName}`} onClick={() => onDownload(key)}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M12 5v14" /><path d="m7 14 5 5 5-5" /><path d="M5 19h14" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    {!isWorking && (
+                                        <button
+                                            className="remove-btn"
+                                            type="button"
+                                            aria-label={`Remove ${item.file.name}`}
+                                            onClick={() => onRemove(index)}
+                                        >
+                                            &times;
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="file-meta">
+                                {displaySize}{item.duration > 0 ? ` · ${formatDuration(item.duration)}` : ""}
+                            </div>
+                            {isError && (
+                                <div className="error-line">{job.error || "Reconstruction failed."}</div>
+                            )}
+                            <div className="progress-track" aria-hidden={!isWorking && !isDone}>
+                                <div className="progress-fill"></div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
-            {status === "error" && (
-                <div className="error-line">{job.error || "Reconstruction failed."}</div>
+            {showExpand && (
+                <button className="queue-expand" type="button" onClick={() => setExpanded(e => !e)}>
+                    {expanded ? "Show less" : `${items.length - 1} more`}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 200ms ease" }}>
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
             )}
-            <div className="progress-track" aria-hidden={!isWorking && status !== "done"}>
-                <div className="progress-fill"></div>
-            </div>
-        </article>
+        </div>
     );
 }
 
@@ -172,12 +254,12 @@ export default function App() {
 
     const coldStarting = Object.values(jobMap).some((j) => j.status === "waiting");
 
-    const processing = files.some((f) => {
-        const s = jobMap[fileKey(f)]?.status;
+    const processing = files.some((item) => {
+        const s = jobMap[fileKey(item.file)]?.status;
         return s === "processing" || s === "waiting";
     });
     const doneCount = files.filter(
-        (f) => jobMap[fileKey(f)]?.status === "done",
+        (item) => jobMap[fileKey(item.file)]?.status === "done",
     ).length;
     const allDone = files.length > 0 && doneCount === files.length;
 
@@ -188,44 +270,73 @@ export default function App() {
         return parts.join(" ");
     }, [dragState]);
 
-    const addFiles = useCallback((fileSet) => {
+    const addFiles = useCallback(async (fileSet) => {
         const incoming = Array.from(fileSet || []);
         if (!incoming.length) return;
 
         fetch(`${API_BASE}/health-check`).catch(() => {});
 
-        setFiles((prev) => {
-            const errors = [];
-            const next = [...prev];
+        const errors = [];
+        const valid = [];
 
-            for (const file of incoming) {
-                const error = validateFile(file);
-                if (error) {
-                    errors.push(error);
+        for (const file of incoming) {
+            const error = validateFile(file);
+            if (error) {
+                errors.push(error);
+                continue;
+            }
+            let duration;
+            try {
+                duration = await getAudioDuration(file);
+                if (duration > MAX_DURATION) {
+                    const mins = Math.ceil(duration / 60);
+                    errors.push(
+                        `${file.name} rejected: ${mins} min exceeds 6 minute limit.`,
+                    );
                     continue;
                 }
+            } catch {
+                errors.push(
+                    `${file.name} rejected: could not read audio duration.`,
+                );
+                continue;
+            }
+            valid.push({ file, duration });
+        }
+
+        if (!valid.length && !errors.length) return;
+
+        let capped = false;
+        setFiles((prev) => {
+            const next = [...prev];
+            for (const item of valid) {
+                if (next.length >= MAX_FILES) {
+                    capped = true;
+                    break;
+                }
                 const duplicate = next.some(
-                    (item) =>
-                        item.name === file.name &&
-                        item.size === file.size &&
-                        item.lastModified === file.lastModified,
+                    (existing) =>
+                        existing.file.name === item.file.name &&
+                        existing.file.size === item.file.size &&
+                        existing.file.lastModified === item.file.lastModified,
                 );
                 if (!duplicate) {
-                    next.push(file);
+                    next.push(item);
                 }
             }
-
-            if (errors.length) {
-                setNotice({ message: errors[0], tone: "error" });
-            } else {
-                setNotice({
-                    message: `${incoming.length} file${incoming.length === 1 ? "" : "s"} checked. ${next.length} ready.`,
-                    tone: "success",
-                });
-            }
-
             return next;
         });
+
+        if (capped) {
+            setNotice({ message: `Queue full: max ${MAX_FILES} files at a time.`, tone: "error" });
+        } else if (errors.length) {
+            setNotice({ message: errors[0], tone: "error" });
+        } else {
+            setNotice({
+                message: `${valid.length} file${valid.length === 1 ? "" : "s"} checked and ready.`,
+                tone: "success",
+            });
+        }
     }, []);
 
     addFilesRef.current = addFiles;
@@ -233,7 +344,7 @@ export default function App() {
     function removeFile(index) {
         setFiles((prev) => {
             const removed = prev[index];
-            const key = fileKey(removed);
+            const key = fileKey(removed.file);
 
             abortControllersRef.current[key]?.abort();
             delete abortControllersRef.current[key];
@@ -284,128 +395,130 @@ export default function App() {
         setNotice({ message: "Reconstruction cancelled.", tone: "" });
     }
 
+    async function processOneFile(file) {
+        if (cancelledRef.current) return;
+        const key = fileKey(file);
+        const controller = new AbortController();
+        abortControllersRef.current[key] = controller;
+
+        setJobMap((prev) => ({
+            ...prev,
+            [key]: { status: "processing" },
+        }));
+
+        let succeeded = false;
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            if (controller.signal.aborted || cancelledRef.current) break;
+            try {
+                const form = new FormData();
+                form.append("file", file);
+                const res = await fetch(`${API_BASE}/model-serve`, {
+                    method: "POST",
+                    body: form,
+                    signal: controller.signal,
+                });
+
+                const retryable =
+                    res.status === 429 || res.status === 503 || res.status === 504;
+                if (retryable && attempt < MAX_RETRIES) {
+                    const retryAfter =
+                        res.headers.get("retry-after");
+                    const delay = getRetryDelay(
+                        attempt,
+                        retryAfter,
+                    );
+                    setJobMap((prev) => ({
+                        ...prev,
+                        [key]: { status: "waiting" },
+                    }));
+                    await new Promise((r) => setTimeout(r, delay));
+                    continue;
+                }
+
+                if (!res.ok) {
+                    const body = await res.json().catch(() => null);
+                    throw new Error(
+                        body?.detail ??
+                            `Server error (${res.status})`,
+                    );
+                }
+
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const disposition =
+                    res.headers.get("content-disposition") ?? "";
+                const nameMatch =
+                    disposition.match(/filename="?([^"]+)"?/);
+                const outputName =
+                    nameMatch?.[1] ??
+                    file.name.replace(
+                        /\.\w+$/,
+                        "_reconstructed.flac",
+                    );
+
+                setJobMap((prev) => ({
+                    ...prev,
+                    [key]: {
+                        status: "done",
+                        result: {
+                            url,
+                            name: outputName,
+                            size: blob.size,
+                        },
+                    },
+                }));
+                succeeded = true;
+                break;
+            } catch (err) {
+                if (err.name === "AbortError") {
+                    setJobMap((prev) => {
+                        const next = { ...prev };
+                        delete next[key];
+                        return next;
+                    });
+                    break;
+                }
+                if (attempt < MAX_RETRIES) continue;
+                setJobMap((prev) => ({
+                    ...prev,
+                    [key]: {
+                        status: "error",
+                        error:
+                            err.message ||
+                            "Reconstruction failed",
+                    },
+                }));
+            }
+        }
+
+        delete abortControllersRef.current[key];
+
+        if (
+            !succeeded &&
+            !controller.signal.aborted &&
+            jobMapRef.current[key]?.status === "waiting"
+        ) {
+            setJobMap((prev) => ({
+                ...prev,
+                [key]: {
+                    status: "error",
+                    error: "Server busy — retries exhausted. Try again later.",
+                },
+            }));
+        }
+    }
+
     async function reconstructAll() {
         if (processingRef.current) return;
         processingRef.current = true;
         cancelledRef.current = false;
 
-        const filesToProcess = files.filter((f) => {
-            const status = jobMap[fileKey(f)]?.status;
+        const filesToProcess = files.filter((item) => {
+            const status = jobMap[fileKey(item.file)]?.status;
             return !status || status === "idle" || status === "error";
         });
 
-        for (const file of filesToProcess) {
-            if (cancelledRef.current) break;
-            const key = fileKey(file);
-            const controller = new AbortController();
-            abortControllersRef.current[key] = controller;
-
-            setJobMap((prev) => ({
-                ...prev,
-                [key]: { status: "processing" },
-            }));
-
-            let succeeded = false;
-            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-                if (controller.signal.aborted) break;
-                try {
-                    const form = new FormData();
-                    form.append("file", file);
-                    const res = await fetch(`${API_BASE}/model-serve`, {
-                        method: "POST",
-                        body: form,
-                        signal: controller.signal,
-                    });
-
-                    const retryable =
-                        res.status === 429 || res.status === 503 || res.status === 504;
-                    if (retryable && attempt < MAX_RETRIES) {
-                        const retryAfter =
-                            res.headers.get("retry-after");
-                        const delay = getRetryDelay(
-                            attempt,
-                            retryAfter,
-                        );
-                        setJobMap((prev) => ({
-                            ...prev,
-                            [key]: { status: "waiting" },
-                        }));
-                        await new Promise((r) => setTimeout(r, delay));
-                        continue;
-                    }
-
-                    if (!res.ok) {
-                        const body = await res.json().catch(() => null);
-                        throw new Error(
-                            body?.detail ??
-                                `Server error (${res.status})`,
-                        );
-                    }
-
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const disposition =
-                        res.headers.get("content-disposition") ?? "";
-                    const nameMatch =
-                        disposition.match(/filename="?([^"]+)"?/);
-                    const outputName =
-                        nameMatch?.[1] ??
-                        file.name.replace(
-                            /\.\w+$/,
-                            "_reconstructed.flac",
-                        );
-
-                    setJobMap((prev) => ({
-                        ...prev,
-                        [key]: {
-                            status: "done",
-                            result: {
-                                url,
-                                name: outputName,
-                                size: blob.size,
-                            },
-                        },
-                    }));
-                    succeeded = true;
-                    break;
-                } catch (err) {
-                    if (err.name === "AbortError") {
-                        setJobMap((prev) => {
-                            const next = { ...prev };
-                            delete next[key];
-                            return next;
-                        });
-                        break;
-                    }
-                    if (attempt < MAX_RETRIES) continue;
-                    setJobMap((prev) => ({
-                        ...prev,
-                        [key]: {
-                            status: "error",
-                            error:
-                                err.message ||
-                                "Reconstruction failed",
-                        },
-                    }));
-                }
-            }
-
-            delete abortControllersRef.current[key];
-
-            if (
-                !succeeded &&
-                !controller.signal.aborted &&
-                jobMapRef.current[key]?.status === "waiting"
-            ) {
-                setJobMap((prev) => ({
-                    ...prev,
-                    [key]: {
-                        status: "error",
-                        error: "Server busy — retries exhausted. Try again later.",
-                    },
-                }));
-            }
-        }
+        await Promise.allSettled(filesToProcess.map((item) => processOneFile(item.file)));
 
         processingRef.current = false;
     }
@@ -625,7 +738,7 @@ export default function App() {
                                 </span>
                             </span>
                             <span className="upload-meta" aria-label="Upload constraints">
-                                <span><strong>MP3 only</strong>{" · "}25 MB per file</span>
+                                <span><strong>MP3 only</strong>{" · "}25 MB per file{" · "}{MAX_FILES} files max</span>
                                 <span className="upload-format">28M GAN</span>
                             </span>
                         </label>
@@ -636,21 +749,13 @@ export default function App() {
 
                     {files.length > 0 && (
                         <section className="queue" aria-label="Reconstruction queue">
-                            {files.map((file, index) => {
-                                const key = fileKey(file);
-                                const job = jobMap[key];
-                                return (
-                                    <FileCard
-                                        key={key}
-                                        file={file}
-                                        job={job}
-                                        index={index}
-                                        onRemove={removeFile}
-                                        onCancel={() => abortControllersRef.current[key]?.abort()}
-                                        onDownload={() => downloadResult(key)}
-                                    />
-                                );
-                            })}
+                            <QueueCard
+                                items={files}
+                                jobMap={jobMap}
+                                onRemove={removeFile}
+                                onCancel={(key) => abortControllersRef.current[key]?.abort()}
+                                onDownload={downloadResult}
+                            />
                         </section>
                     )}
 

@@ -982,12 +982,7 @@ h1 {
     margin-top: 20px;
 }
 
-.file-card {
-    position: relative;
-    overflow: hidden;
-    display: grid;
-    gap: 14px;
-    padding: 17px 18px 16px;
+.queue-card {
     border: 1px solid
         color-mix(in oklch, var(--border) 88%, transparent);
     border-radius: var(--radius-md);
@@ -998,6 +993,7 @@ h1 {
     );
     backdrop-filter: blur(18px) saturate(1.12);
     box-shadow: 0 18px 54px rgb(82 58 30 / 0.13);
+    overflow: hidden;
     animation: cardIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -1012,29 +1008,83 @@ h1 {
     }
 }
 
-.file-card.done {
-    border-color: color-mix(
-        in oklch,
-        var(--success) 34%,
-        var(--border)
-    );
+.queue-card-inner {
+    transition: max-height 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.queue-card.collapsed .queue-card-inner {
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, black calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 20px), transparent 100%);
+}
+
+.queue-row {
+    padding: 14px 18px;
+    border-bottom: 1px solid
+        color-mix(in oklch, var(--border) 60%, transparent);
+    display: grid;
+    gap: 4px;
+}
+
+.queue-row:last-child {
+    border-bottom: none;
+}
+
+.queue-row.done {
     background: color-mix(
         in oklch,
-        var(--surface) 74%,
-        var(--success) 4%
+        var(--success) 4%,
+        transparent
     );
 }
 
-.file-card.failed {
-    border-color: color-mix(
+.queue-row.failed {
+    background: color-mix(
         in oklch,
-        var(--danger) 50%,
-        var(--border)
+        var(--danger) 4%,
+        transparent
     );
 }
 
-.file-card.cancelled {
-    opacity: 0.62;
+.file-meta {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.queue-expand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.queue-expand:hover {
+    color: var(--fg);
+}
+
+.download-btn {
+    width: 34px;
+    min-height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--fg);
+    color: var(--bg);
+    transition: transform 150ms ease, background 150ms ease;
+}
+
+.download-btn:hover {
+    transform: scale(1.05);
 }
 
 .file-top {
