@@ -10,9 +10,9 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 
 A GAN (Generative Adversarial Network) learns to reverse compression artifacts:
 
-1. **Generator** — predicts high-resolution spectral content from the compressed waveform
-2. **Discriminator** — enforces perceptual realism by distinguishing real from reconstructed audio
-3. **Training objective** — combines adversarial loss, multi-scale spectral loss, and perceptual loss
+1. **Generator** — a 1D U-Net (~28M params) that predicts high-resolution spectral content from the compressed waveform via a residual connection (learns the difference, not the full signal)
+2. **Discriminator** — a multi-scale network (~25M params) that enforces perceptual realism by distinguishing real from reconstructed audio
+3. **Training objective** — combines LSGAN adversarial loss, multi-scale spectral loss (STFT at 512/1024/2048), and feature matching loss
 
 ## Use Cases
 
@@ -24,23 +24,26 @@ A GAN (Generative Adversarial Network) learns to reverse compression artifacts:
 
 ```
 audioreconstruction/
-├── backend/           # FastAPI inference server
-├── frontend/          # React + Vite + Tailwind UI
-├── model/             # PyTorch model weights and configs
-├── docker/            # Container definitions
+├── backend/           # Local FastAPI inference server
+├── server/            # Production server (Modal.com GPU deployment)
+├── frontend/          # React 19 + Vite 8 + Tailwind CSS 4 UI
+├── model/             # PyTorch model definition, training, and evaluation
+├── test/              # Audio similarity evaluation scripts
+├── design/            # UI design briefs and mockups
 ├── docs/              # Contributing, security, code of conduct
 └── pyproject.toml     # Python project config (uv)
 ```
 
 ## Tech Stack
 
-| Layer    | Technology                            |
-|----------|---------------------------------------|
-| Model    | PyTorch, torchaudio, safetensors      |
-| Backend  | FastAPI, uvicorn                      |
-| Frontend | React 19, Vite 8, Tailwind CSS 4     |
-| Metrics  | PESQ (perceptual evaluation)          |
-| Tooling  | uv (Python), Bun (JS), Ruff (lint)   |
+| Layer      | Technology                            |
+|------------|---------------------------------------|
+| Model      | PyTorch, torchaudio, safetensors      |
+| Backend    | FastAPI, uvicorn, SlowAPI             |
+| Deployment | Modal.com (GPU serverless — T4)       |
+| Frontend   | React 19, Vite 8, Tailwind CSS 4     |
+| Metrics    | PESQ, SNR (perceptual evaluation)     |
+| Tooling    | uv (Python), Bun (JS), Ruff (lint)   |
 
 ## Getting Started
 
@@ -50,6 +53,7 @@ audioreconstruction/
 - Node.js >= 20
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 - [Bun](https://bun.sh/) (JS package manager, optional — npm works too)
+- [FFmpeg](https://ffmpeg.org/) (for data preparation)
 
 ### Setup
 
@@ -64,17 +68,23 @@ uv sync
 cd frontend && bun install
 ```
 
-> The model weights are hosted on HuggingFace and here's the [link](https://huggingface.co/rohanprasen-kedari/audioreconstruction/tree/main/checkpoints/best) to the model weights folder. Download the `generator.safetensors` for local testing and inference and paste it under `./model/checkpoints/best/` folder
+> Model weights are hosted on HuggingFace — [download here](https://huggingface.co/rohanprasen-kedari/audioreconstruction/tree/main/checkpoints/best). Place `generator.safetensors` under `./model/checkpoints/best/`.
 
-
-### Run
+### Run Locally
 
 ```bash
-# Start the backend
+# Start the local backend
 uv run uvicorn backend.main:app --reload
 
 # Start the frontend (in a separate terminal)
 cd frontend && bun dev
+```
+
+### Deploy to Modal
+
+```bash
+# Deploy the production server to Modal.com (requires `modal` CLI auth)
+cd server && modal deploy modal_app.py
 ```
 
 ## Development
@@ -88,6 +98,15 @@ cd frontend && bun lint
 
 # Run tests
 uv run pytest
+
+# Prepare training data (requires FFmpeg)
+uv run python -m model.prepare_data
+
+# Train the model
+uv run python -m model.train
+
+# Evaluate / infer
+uv run python -m model.evaluate --checkpoint model/checkpoints/best --input song.mp3 --output output/
 ```
 
 ## Contributing

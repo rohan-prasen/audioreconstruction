@@ -1,20 +1,20 @@
-# Usage
+# Test — Audio Similarity Evaluation
 
-This directory contains python scripts to test the similarity between audio signals of two files of any kind one for FLAC and one for FLAC and mp3.
+Scripts for comparing audio signal similarity between file pairs. Useful for evaluating reconstruction quality against original lossless sources.
 
-## FLAC-to-FLAC comparison
+> Requires all Python dependencies installed. See the [root README](../README.md) for setup.
 
-The command to use this script is as follows:
+## FLAC-to-FLAC Comparison
 
-> Assuming that you have created a virtual environment and have all the dependecies installed and setup. If not reach out to [README](../README.md)
+Compare an original FLAC against a reconstructed FLAC:
 
 ```bash
-uv run python -m test.eval_FLAC "path to the original FLAC" "path to the reconstructed FLAC"
+uv run python -m test.eval_FLAC "path/to/original.flac" "path/to/reconstructed.flac"
 ```
 
 ### Sample Output
 
-```markdown
+```
                   Comparison Results
 ┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
 ┃ Metric                 ┃    Value ┃ Interpretation ┃
@@ -25,14 +25,17 @@ uv run python -m test.eval_FLAC "path to the original FLAC" "path to the reconst
 └────────────────────────┴──────────┴────────────────┘
 ```
 
-## FLAC-to-MP3
+## FLAC-to-MP3 Comparison
+
+Compare a FLAC reference against an MP3 (measures compression loss):
 
 ```bash
-uv run python -m test.eval_mp3 "path to FLAC file" "path to the mp3 file"
+uv run python -m test.eval_mp3 "path/to/reference.flac" "path/to/compressed.mp3"
 ```
 
-### Sample Output
+## Metrics
 
-```markdown
-
-```
+| Metric | What it measures |
+|--------|-----------------|
+| SNR | Signal-to-noise ratio in dB |
+| Spectrogram Similarity | Frequency-domain similarity (%) |
