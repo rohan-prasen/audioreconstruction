@@ -17,6 +17,7 @@ image = (
         "safetensors",
         "torch",
         "torchaudio",
+        "mutagen",
     )
     .add_local_dir(
         _SERVER_DIR,

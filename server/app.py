@@ -13,7 +13,7 @@ from pathlib import Path
 
 import soundfile as sf
 import torch
-from audio_io import load_audio_sf, write_flac
+from audio_io import copy_metadata, load_audio_sf, write_flac
 from batcher import InferenceBatcher
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -61,24 +61,22 @@ INFERENCE_TIMEOUT = 180
 def _preprocess_audio(
     content: bytes,
     cfg,
-) -> list[tuple[torch.Tensor, int]]:
+) -> tuple[list[tuple[torch.Tensor, int]], Path]:
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
     tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=str(TEMP_DIR))
     tmp.write(content)
     tmp.close()
     input_path = Path(tmp.name)
 
-    try:
-        info = sf.info(str(input_path))
-        duration = info.frames / info.samplerate
-        if duration > 360:
-            raise ValueError("Audio exceeds 6 minute limit.")
-
-        waveform = load_audio_sf(
-            input_path, target_sr=cfg.sample_rate, channels=cfg.in_channels
-        )
-    finally:
+    info = sf.info(str(input_path))
+    duration = info.frames / info.samplerate
+    if duration > 360:
         input_path.unlink(missing_ok=True)
+        raise ValueError("Audio exceeds 6 minute limit.")
+
+    waveform = load_audio_sf(
+        input_path, target_sr=cfg.sample_rate, channels=cfg.in_channels
+    )
 
     peak = waveform.abs().max()
     if peak > 0:
@@ -100,16 +98,18 @@ def _preprocess_audio(
             segments.append((chunk, min(seg_len, length - start)))
 
     del waveform
-    return segments
+    return segments, input_path
 
 
-def _encode_flac(result: torch.Tensor, sample_rate: int) -> bytes:
+def _encode_flac(result: torch.Tensor, sample_rate: int, src_mp3: Path | None = None) -> bytes:
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
     tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False, dir=str(TEMP_DIR))
     tmp.close()
     output_path = Path(tmp.name)
     try:
         write_flac(result, output_path, sample_rate)
+        if src_mp3 is not None:
+            copy_metadata(src_mp3, output_path)
         return output_path.read_bytes()
     finally:
         output_path.unlink(missing_ok=True)
@@ -225,8 +225,9 @@ async def model_serve(request: Request, file: UploadFile):
     batcher: InferenceBatcher = app.state.batcher
     cfg = app.state.cfg
 
+    mp3_path: Path | None = None
     try:
-        segments = await loop.run_in_executor(
+        segments, mp3_path = await loop.run_in_executor(
             None, _preprocess_audio, content, cfg
         )
         del content
@@ -253,7 +254,7 @@ async def model_serve(request: Request, file: UploadFile):
             torch.cuda.empty_cache()
 
         flac_bytes = await loop.run_in_executor(
-            None, _encode_flac, combined, cfg.sample_rate
+            None, _encode_flac, combined, cfg.sample_rate, mp3_path
         )
         del combined
 
@@ -272,4 +273,6 @@ async def model_serve(request: Request, file: UploadFile):
         logger.exception("Inference failed")
         raise HTTPException(500, "Inference failed.")
     finally:
+        if mp3_path is not None:
+            mp3_path.unlink(missing_ok=True)
         gc.collect()
