@@ -240,6 +240,7 @@ export default function App() {
 
     const dragDepthRef = useRef(0);
     const addFilesRef = useRef(null);
+    const fileInputRef = useRef(null);
     const processingRef = useRef(false);
     const jobMapRef = useRef(jobMap);
     const abortControllersRef = useRef({});
@@ -249,8 +250,6 @@ export default function App() {
     jobMapRef.current = jobMap;
 
     const activeTheme = themeChoice === "system" ? (systemDark ? "dark" : "light") : themeChoice;
-    // eslint-disable-next-line no-unused-vars
-    const dark = activeTheme === "dark"; // kept for any future logic that references it
 
     const coldStarting = Object.values(jobMap).some((j) => j.status === "waiting");
 
@@ -375,24 +374,6 @@ export default function App() {
         setFiles([]);
         setJobMap({});
         setNotice({ message: "No files selected.", tone: "" });
-    }
-
-    // eslint-disable-next-line no-unused-vars
-    function cancelAll() {
-        cancelledRef.current = true;
-        Object.values(abortControllersRef.current).forEach((c) => c.abort());
-        abortControllersRef.current = {};
-        setJobMap((prev) => {
-            const next = { ...prev };
-            for (const k of Object.keys(next)) {
-                if (next[k].status === "processing" || next[k].status === "waiting") {
-                    delete next[k];
-                }
-            }
-            return next;
-        });
-        processingRef.current = false;
-        setNotice({ message: "Reconstruction cancelled.", tone: "" });
     }
 
     async function processOneFile(file) {
@@ -705,13 +686,24 @@ export default function App() {
                     <div className="dropzone-shell">
                         <label
                             className={dropClass}
+                            tabIndex={0}
+                            role="button"
+                            aria-label="Upload MP3 files. Drag and drop or press Enter to browse."
                             onMouseEnter={() => setDragState(s => s === "idle" ? "hover" : s)}
                             onMouseLeave={() => setDragState("idle")}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    fileInputRef.current?.click();
+                                }
+                            }}
                         >
                             <input
+                                ref={fileInputRef}
                                 type="file"
                                 accept="audio/mpeg,.mp3"
                                 multiple
+                                tabIndex={-1}
                                 onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
                                 style={{ display: "none" }}
                             />

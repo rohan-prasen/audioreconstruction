@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-03T00:00:00Z",
+  "title": "Design System: AudioReconstruction",
+  "extensions": {
+    "colorMeta": {
+      "terracotta-ember": {
+        "role": "primary",
+        "displayName": "Terracotta Ember",
+        "canonical": "oklch(57% 0.125 58)",
+        "tonalRamp": ["oklch(22% 0.05 58)", "oklch(32% 0.08 58)", "oklch(42% 0.10 58)", "oklch(50% 0.12 58)", "oklch(57% 0.125 58)", "oklch(67% 0.11 58)", "oklch(79% 0.075 58)", "oklch(91% 0.035 58)"]
+      },
+      "warm-sand-bg": {
+        "role": "neutral",
+        "displayName": "Warm Sand",
+        "canonical": "oklch(92.8% 0.012 78)",
+        "tonalRamp": ["oklch(20% 0.012 78)", "oklch(32% 0.012 78)", "oklch(45% 0.013 78)", "oklch(58% 0.013 78)", "oklch(70% 0.013 78)", "oklch(81% 0.013 78)", "oklch(92.8% 0.012 78)", "oklch(97% 0.008 82)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Lit Surface",
+        "canonical": "oklch(97.2% 0.006 82)",
+        "tonalRamp": ["oklch(18% 0.02 56)", "oklch(30% 0.016 60)", "oklch(45% 0.012 68)", "oklch(60% 0.01 74)", "oklch(74% 0.008 78)", "oklch(86% 0.007 80)", "oklch(92% 0.006 82)", "oklch(97.2% 0.006 82)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "oklch(19% 0.018 66)",
+        "tonalRamp": ["oklch(15% 0.018 66)", "oklch(19% 0.018 66)", "oklch(28% 0.018 66)", "oklch(38% 0.016 68)", "oklch(50% 0.015 70)", "oklch(64% 0.013 72)", "oklch(80% 0.011 76)", "oklch(94% 0.008 80)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Clay",
+        "canonical": "oklch(43% 0.014 72)",
+        "tonalRamp": ["oklch(25% 0.014 72)", "oklch(33% 0.014 72)", "oklch(43% 0.014 72)", "oklch(53% 0.015 74)", "oklch(63% 0.02 74)", "oklch(74% 0.026 76)", "oklch(85% 0.02 78)", "oklch(93% 0.012 80)"]
+      },
+      "success-amber": {
+        "role": "tertiary",
+        "displayName": "Success Amber",
+        "canonical": "oklch(67% 0.13 72)",
+        "tonalRamp": ["oklch(28% 0.06 72)", "oklch(38% 0.09 72)", "oklch(48% 0.11 72)", "oklch(58% 0.125 72)", "oklch(67% 0.13 72)", "oklch(76% 0.11 74)", "oklch(86% 0.08 76)", "oklch(93% 0.04 78)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero headline only — Iowan Old Style serif. One per page." },
+      "headline": { "displayName": "Subhead", "purpose": "Spoken italic tagline under the hero — Avenir Next italic." },
+      "title": { "displayName": "Panel Title", "purpose": "Serif titles on panels/toasts — small serif, not display." },
+      "body": { "displayName": "Body", "purpose": "All working copy, captions, status. System sans, 65–75ch." },
+      "label": { "displayName": "Format Label", "purpose": "Uppercase tracked humanist-sans badges only. Never section eyebrows." }
+    },
+    "shadows": [
+      { "name": "ambient-float", "value": "0 18px 54px rgb(82 58 30 / 0.13)", "purpose": "Resting elevation for cards, dropzone, nav." },
+      { "name": "ambient-lift", "value": "0 26px 90px rgb(82 58 30 / 0.18)", "purpose": "Deepest lift for drag-active and modal-like moments (--shadow-soft)." },
+      { "name": "inset-highlight", "value": "inset 0 1px 0 rgb(255 255 255 / 0.42)", "purpose": "Top-edge catch-light that sells the warm-glass material." },
+      { "name": "accent-halo", "value": "0 0 0 8px color-mix(in oklch, var(--accent) 16%, transparent)", "purpose": "Soft Ember ring on drag-accept and focus." }
+    ],
+    "motion": [
+      { "name": "ease-warm", "value": "cubic-bezier(0.2, 0.8, 0.2, 1)", "purpose": "Standard ease-out for surfaces, menus, buttons, and lifts." },
+      { "name": "duration-state", "value": "150ms", "purpose": "State feedback on controls (hover, focus, active)." },
+      { "name": "duration-surface", "value": "180ms", "purpose": "Glass surface transitions (nav scroll, dropzone hover)." },
+      { "name": "shimmer", "value": "1.15s linear infinite", "purpose": "Ember progress shimmer while a job processes." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "700px" },
+      { "name": "sm", "value": "430px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action — Start reconstruction. Ink-on-sand inversion, full pill.",
+      "html": "<button class=\"ds-btn-primary\">Start reconstruction</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 0 30px; border: 0; border-radius: 999px; background: var(--fg, #2b2419); color: var(--bg, #ece5d9); font: 750 16px/-apple-system, system-ui, sans-serif; letter-spacing: -0.01em; box-shadow: 0 18px 46px color-mix(in oklch, var(--fg, #2b2419) 18%, transparent); cursor: pointer; transition: transform 160ms cubic-bezier(0.2,0.8,0.2,1), filter 160ms ease; } .ds-btn-primary:hover { transform: scale(1.02); filter: brightness(1.04); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #b8622f); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis outline pill — the GitHub Star link. Border shifts to Ember on hover.",
+      "html": "<a class=\"ds-btn-ghost\" href=\"#\"><span>Star</span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 .5A11.5 11.5 0 0 0 8.36 22.9c.58.11.79-.25.79-.56v-2.02c-3.22.7-3.9-1.38-3.9-1.38-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.78 1.2 1.78 1.2 1.04 1.77 2.72 1.26 3.38.96.1-.75.4-1.26.73-1.55-2.57-.29-5.28-1.29-5.28-5.73 0-1.27.45-2.3 1.2-3.12-.12-.29-.52-1.47.11-3.08 0 0 .98-.31 3.2 1.2a11.1 11.1 0 0 1 5.83 0c2.22-1.51 3.2-1.2 3.2-1.2.63 1.61.23 2.79.11 3.08.75.82 1.2 1.85 1.2 3.12 0 4.46-2.71 5.43-5.3 5.72.42.37.79 1.09.79 2.2v3.26c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .5Z\"/></svg></a>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 13px 0 15px; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 70%, transparent); border-radius: 999px; background: color-mix(in oklch, var(--surface, #f8f4ee) 36%, transparent); color: var(--fg, #2b2419); font: 400 14px/1 Optima, 'Avenir Next', system-ui, sans-serif; text-decoration: none; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; } .ds-btn-ghost:hover { transform: translateY(-1px); border-color: color-mix(in oklch, var(--accent, #b8622f) 55%, var(--border, #cdc4b5)); background: color-mix(in oklch, var(--surface, #f8f4ee) 70%, transparent); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent, #b8622f); outline-offset: 2px; }"
+    },
+    {
+      "name": "Format Badge",
+      "kind": "chip",
+      "refersTo": "chip-badge",
+      "description": "Read-only spec/format tag — uppercase tracked label. Not interactive.",
+      "html": "<span class=\"ds-badge\">FLAC output</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 80%, transparent); border-radius: 999px; background: color-mix(in oklch, var(--surface, #f8f4ee) 64%, transparent); color: color-mix(in oklch, var(--fg, #2b2419) 78%, var(--muted, #6b6357)); font: 500 11px/1.4 Optima, 'Avenir Next', system-ui, sans-serif; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; }"
+    },
+    {
+      "name": "Dropzone Panel",
+      "kind": "custom",
+      "refersTo": "dropzone",
+      "description": "Signature warm-glass upload affordance with a dashed inner well. The primary input — a full panel, not a text field.",
+      "html": "<div class=\"ds-dropzone\"><div class=\"ds-dz-head\"><span class=\"ds-dz-title\">Audio upload</span><span class=\"ds-badge\">FLAC output</span></div><div class=\"ds-dz-well\"><span class=\"ds-dz-icon\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 17V5\"/><path d=\"m7 10 5-5 5 5\"/><path d=\"M5 19h14\"/></svg></span><span class=\"ds-dz-copy\"><strong>Drag and drop or choose MP3 files</strong><span>Click anywhere in this panel to browse.</span></span></div></div>",
+      "css": ".ds-dropzone { display: grid; gap: 18px; padding: 24px; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 92%, transparent); border-radius: 24px; background: color-mix(in oklch, var(--surface, #f8f4ee) 80%, transparent); box-shadow: 0 18px 52px rgb(82 58 30 / 0.13), inset 0 1px 0 rgb(255 255 255 / 0.44); backdrop-filter: blur(22px) saturate(1.1); transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms cubic-bezier(0.2,0.8,0.2,1); } .ds-dropzone:hover { border-color: color-mix(in oklch, var(--accent, #b8622f) 32%, var(--border, #cdc4b5)); } .ds-dz-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; } .ds-dz-title { font: 500 19px/1.12 'Iowan Old Style', Charter, Georgia, serif; letter-spacing: -0.006em; color: var(--fg, #2b2419); } .ds-dz-well { display: flex; align-items: center; gap: 15px; min-height: 116px; padding: 23px 24px; border: 1px dashed color-mix(in oklch, var(--border, #cdc4b5) 76%, var(--fg, #2b2419) 10%); border-radius: 17px; background: color-mix(in oklch, var(--bg, #ece5d9) 48%, transparent); transition: border-color 180ms ease, background 180ms ease; } .ds-dropzone:hover .ds-dz-well { border-color: color-mix(in oklch, var(--accent, #b8622f) 56%, var(--border, #cdc4b5)); } .ds-dz-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 70%, transparent); border-radius: 13px; color: var(--fg, #2b2419); background: color-mix(in oklch, var(--surface, #f8f4ee) 76%, var(--accent, #b8622f) 8%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22); } .ds-dz-copy { display: grid; gap: 3px; } .ds-dz-copy strong { font: 500 15.5px/1.3 -apple-system, system-ui, sans-serif; color: var(--fg, #2b2419); } .ds-dz-copy span { font: 400 13.5px/1.4 -apple-system, system-ui, sans-serif; color: var(--muted, #6b6357); }"
+    },
+    {
+      "name": "Queue Row",
+      "kind": "card",
+      "refersTo": "card-queue",
+      "description": "A single file in the reconstruction queue with an Ember progress track. Processing state shown.",
+      "html": "<div class=\"ds-queue-row\"><div class=\"ds-qr-top\"><div class=\"ds-qr-name\">midnight-city.mp3</div><span class=\"ds-qr-status\">Processing…</span></div><div class=\"ds-qr-meta\">7.84 MB · 3:52</div><div class=\"ds-qr-track\"><div class=\"ds-qr-fill\"></div></div></div>",
+      "css": ".ds-queue-row { display: grid; gap: 4px; padding: 14px 18px; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 88%, transparent); border-radius: 18px; background: color-mix(in oklch, var(--surface, #f8f4ee) 80%, transparent); box-shadow: 0 18px 54px rgb(82 58 30 / 0.13); backdrop-filter: blur(18px) saturate(1.12); } .ds-qr-top { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 14px; } .ds-qr-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 650 14px/1.3 -apple-system, system-ui, sans-serif; letter-spacing: -0.01em; color: var(--fg, #2b2419); } .ds-qr-status { font: 650 13px/1 -apple-system, system-ui, sans-serif; color: var(--muted, #6b6357); } .ds-qr-meta { font: 400 13px/1.4 -apple-system, system-ui, sans-serif; color: var(--muted, #6b6357); } .ds-qr-track { position: relative; overflow: hidden; height: 3px; border-radius: 999px; background: color-mix(in oklch, var(--border, #cdc4b5) 70%, transparent); } .ds-qr-fill { position: absolute; inset: 0 auto 0 0; width: 42%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in oklch, var(--accent, #b8622f) 62%, transparent), var(--accent, #b8622f)); animation: ds-shimmer 1.15s linear infinite; } @keyframes ds-shimmer { from { transform: translateX(-40%); } to { transform: translateX(140%); } }"
+    },
+    {
+      "name": "Wakeup Toast",
+      "kind": "custom",
+      "refersTo": "wakeup-toast",
+      "description": "Signature honest-machine toast shown while the model cold-starts. Warm-glass pill, Ember spinner.",
+      "html": "<div class=\"ds-toast\" role=\"status\"><span class=\"ds-toast-spin\"></span><span class=\"ds-toast-text\"><span class=\"ds-toast-title\">Waking up the model…</span><span class=\"ds-toast-sub\">First request takes ~30–60 s</span></span></div>",
+      "css": ".ds-toast { display: inline-flex; align-items: center; gap: 14px; padding: 13px 22px 13px 18px; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 86%, var(--accent, #b8622f) 10%); border-radius: 999px; background: linear-gradient(135deg, color-mix(in oklch, var(--surface, #f8f4ee) 88%, transparent), color-mix(in oklch, var(--surface, #f8f4ee) 62%, transparent)); backdrop-filter: blur(24px) saturate(1.22); box-shadow: 0 18px 58px rgb(82 58 30 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.42); } .ds-toast-spin { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 999px; border: 2px solid color-mix(in oklch, var(--accent, #b8622f) 52%, var(--border, #cdc4b5)); border-top-color: var(--accent, #b8622f); animation: ds-spin 900ms linear infinite; } @keyframes ds-spin { to { transform: rotate(360deg); } } .ds-toast-text { display: grid; gap: 2px; } .ds-toast-title { font: 600 14.5px/1.2 'Iowan Old Style', Charter, Georgia, serif; letter-spacing: -0.01em; color: var(--fg, #2b2419); } .ds-toast-sub { font: 400 12px/1.3 -apple-system, system-ui, sans-serif; color: var(--muted, #6b6357); }"
+    },
+    {
+      "name": "Theme Trigger",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Pill trigger for the light/dark/system theme menu. Warm-glass, Ember border on hover/open.",
+      "html": "<button class=\"ds-theme-trigger\" aria-label=\"Theme menu\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3.5\" y=\"4.5\" width=\"17\" height=\"11.5\" rx=\"2.2\"/><path d=\"M9 20h6M12 16v4\"/></svg></button>",
+      "css": ".ds-theme-trigger { display: inline-grid; place-items: center; width: 56px; height: 38px; border: 1px solid color-mix(in oklch, var(--border, #cdc4b5) 76%, transparent); border-radius: 999px; background: color-mix(in oklch, var(--surface, #f8f4ee) 42%, transparent); color: var(--fg, #2b2419); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28); cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; } .ds-theme-trigger:hover { transform: translateY(-1px); border-color: color-mix(in oklch, var(--accent, #b8622f) 48%, var(--border, #cdc4b5)); background: color-mix(in oklch, var(--surface, #f8f4ee) 72%, transparent); } .ds-theme-trigger:focus-visible { outline: 2px solid var(--accent, #b8622f); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Warm Listening Room",
+    "overview": "A hi-fi mastering room at golden hour. Warm lamplight falls on sand-toned walls; brass-warm accents catch the eye; a few floating glass panels glow as if lit from within. The interface is not a lab, not a startup dashboard, and not a cluttered DAW — it is a calm, expert space where a good file gets handed back better. The system is warm-neutral by default and spends its one saturated color — Terracotta Ember — sparingly, on the moments that matter. Depth comes from warm glass: backdrop-blurred floating surfaces with a warm ambient shadow beneath and a bright inset highlight along the top edge. Typography pairs a warm literary serif for display and titles against a clean system sans for body and a humanist sans for labels — contrast by axis, never two sans that almost match.",
+    "keyCharacteristics": [
+      "Warm-neutral sand canvas; one saturated accent (Terracotta Ember) used on ≤10% of any screen.",
+      "Signature warm-glass elevation: backdrop-blur + warm ambient shadow + inset top-highlight.",
+      "Serif-display / system-sans / humanist-label three-voice type system.",
+      "Generous pill geometry (999px) on all interactive controls.",
+      "Light and dark themes, both warm-tinted; identical component grammar across them.",
+      "Motion is calm and honest: state feedback, not choreography."
+    ],
+    "rules": [
+      { "name": "The One Ember Rule", "body": "Terracotta Ember covers ≤10% of any screen. Its rarity is what makes the primary action and the active state read instantly. If two things on screen are ember, one of them is wrong.", "section": "colors" },
+      { "name": "The Legible Muted Rule", "body": "--muted on --bg/--surface is the single most likely contrast failure. Body and status text must clear 4.5:1; placeholder and tertiary captions are held to the same bar, not excused as elegant. When in doubt, push the text toward Ink, never toward the sand.", "section": "colors" },
+      { "name": "The Serif-Speaks Rule", "body": "The serif is for identity and headings — display, titles, the wordmark, the drag overlay. It never sets body copy, form controls, or data. Those are sans, always.", "section": "typography" },
+      { "name": "The Quiet Kicker Rule", "body": "Uppercase tracked labels are permitted only as file-format badges where the letterform-as-spec reading is the point. They are forbidden as section eyebrows above headings.", "section": "typography" },
+      { "name": "The Warm-Shadow Rule", "body": "Shadows are warm brown (rgb(82 58 30)), never neutral black in the light theme. A cool black shadow instantly breaks the golden-hour room.", "section": "elevation" },
+      { "name": "The Floating-Glass Rule", "body": "Glass (backdrop-blur) is for surfaces that float over content: nav, dropzone, cards, toast, menu. It is forbidden as decoration on inline or full-width blocks. If a surface doesn't float, it doesn't blur.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do spend Terracotta Ember on ≤10% of the screen — primary action, focus, progress, and glow only.",
+      "Do keep body and status text at ≥4.5:1 against sand/surface in both themes; push toward Ink, never toward sand.",
+      "Do use warm-brown ambient shadows (rgb(82 58 30 / …)) with a white inset top-highlight on every glass surface.",
+      "Do set the serif (Iowan Old Style) for display, titles, and the wordmark; system sans for body; humanist sans for labels/controls.",
+      "Do make every interactive control a full pill (999px) and give it default/hover/focus-visible/disabled states.",
+      "Do surface the machine honestly — waking, processing, retrying, done, error — with aria-live and calm motion.",
+      "Do honor prefers-reduced-motion: the mesh blobs, shimmer, and card entrance must have an instant/calm fallback."
+    ],
+    "donts": [
+      "Don't build a generic SaaS template — no dark hero gradients, no hero-metric stat blocks, no identical feature-card grids, no tiny uppercase tracked eyebrows above sections.",
+      "Don't build a cluttered audio-tool UI — no knobs, meters, waveform scrubbers, or toolbar overload. One task, one surface.",
+      "Don't use --muted gray for anything that must be read comfortably; if it looks elegant and faint, it's failing contrast.",
+      "Don't apply glassmorphism to inline or full-width blocks. Glass is for floating surfaces only.",
+      "Don't use neutral black shadows in the light theme — they break the golden-hour warmth.",
+      "Don't pair the system sans with another near-identical sans, or set body copy in the serif.",
+      "Don't push the display headline past its 116px ceiling or tighten letter-spacing below -0.04em.",
+      "Don't use a conventional green for success — success is Warm Amber.",
+      "Don't add numbered section markers (01/02/03) or eyebrow kickers as scaffolding."
+    ]
+  }
+}
