@@ -25,3 +25,7 @@ media/recordings/*
 !media/recordings/*.gif
 
 design/index.html
+
+.claude/skills/impeccable/scripts
+.github/skills/impeccable/scripts
+.opencode/skills/impeccable/scripts/
