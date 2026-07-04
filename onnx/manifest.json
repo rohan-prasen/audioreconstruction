@@ -1,0 +1,14 @@
+{
+  "modelVersion": "1.0.0",
+  "huggingfaceUrl": "https://huggingface.co/rohanprasen-kedari/audioreconstruction/resolve/main/checkpoints/best-onnx/",
+  "files": {
+    "model.onnx": {
+      "sha256": "",
+      "bytes": 0
+    },
+    "config.json": {
+      "sha256": "",
+      "bytes": 0
+    }
+  }
+}

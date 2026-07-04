@@ -1,0 +1,5 @@
+onnxruntime==1.20.1
+soundfile>=0.13.1
+numpy>=1.26
+scipy>=1.11
+mutagen>=1.47
