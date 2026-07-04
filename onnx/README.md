@@ -1,4 +1,4 @@
-# onnx_export
+# onnx
 
 Exports the generator to ONNX and runs inference on it without PyTorch — built so the
 audio-enhancement model can be embedded in third-party apps (e.g. an Electron music
@@ -11,12 +11,37 @@ that's what makes a "download and run" UX viable for end users who don't have Py
 
 ---
 
+## Getting the model
+
+The exported model (`model.onnx` + `config.json`) is committed straight into this repo
+under `onnx/exported/`, tracked via **git-lfs** (see `.gitattributes`) — it is **not**
+hosted on HuggingFace. Cloning the repo is enough to get it:
+
+```bash
+git clone git@github.com:rohan-prasen/audioreconstruction.git
+cd audioreconstruction
+```
+
+If `git-lfs` wasn't installed/initialized before cloning, `onnx/exported/model.onnx`
+will check out as a small text pointer instead of the real ~112.6 MB file. Fix with:
+
+```bash
+git lfs install   # once per machine
+git lfs pull       # fetches the real LFS objects for an already-cloned repo
+```
+
+You only need to run `export.py` yourself if you're retraining the model or want to
+regenerate/verify the ONNX export locally — otherwise skip straight to
+[Run inference](#2-run-inference).
+
+---
+
 ## Two scripts, two audiences
 
 | Script | Who runs it | Needs PyTorch? |
 |---|---|---|
 | `export.py` | You, once per model version, in this repo's dev environment | Yes |
-| `inference.py` | The end-user-facing app (or you, to test) | **No** — only `requirements-onnx.txt` |
+| `inference.py` | The end-user-facing app (or you, to test) | **No** — only `requirements.txt` |
 
 `export.py` converts a trained PyTorch checkpoint into `model.onnx` +
 `config.json`. `inference.py` is what actually ships — a standalone CLI that
@@ -25,19 +50,20 @@ pure-Python libraries.
 
 ---
 
-## 1. Export a checkpoint to ONNX
+## 1. (Re-)export a checkpoint to ONNX
 
-From the repo root, with the dev environment installed:
+From the repo root, with the dev environment installed (`onnx`/`onnxruntime` are part
+of the `dev` dependency group, installed by default):
 
 ```bash
-uv sync --group onnx
-uv run python -m onnx_export.export --checkpoint model/checkpoints/best
+uv sync
+uv run python -m onnx.export --checkpoint model/checkpoints/best
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--checkpoint` | `model/checkpoints/best` | Directory containing `generator.safetensors` + `config.json` |
-| `--output` | `onnx_export/exported` | Where to write `model.onnx` + `config.json` |
+| `--output` | `onnx/exported` | Where to write `model.onnx` + `config.json` |
 | `--opset` | 18 | ONNX opset version |
 | `--skip-verify` | off | Skip the PyTorch-vs-ONNX parity check |
 
@@ -49,7 +75,9 @@ This:
 3. Runs one sample through both the PyTorch model and the exported ONNX model and
    compares outputs (`PASS`/`FAIL` printed, non-zero exit on failure — this is the
    parity check `--skip-verify` disables).
-4. Prints a `huggingface-cli upload` command for publishing the result.
+4. Prints the `git add`/`git commit` commands to publish the result (git-lfs uploads
+   the actual binary content transparently on `git push`, per `.gitattributes` — no
+   separate hosting step).
 
 Expect a `model.onnx` of ~112.6 MB (fp32, same 28.2M params as the safetensors
 checkpoint — ONNX export doesn't quantize or shrink weights on its own) and a
@@ -57,7 +85,7 @@ checkpoint — ONNX export doesn't quantize or shrink weights on its own) and a
 
 ---
 
-## 2. Run inference (the shipped script)
+## 2. Run inference
 
 This is the one that matters for embedding — it never imports `torch`.
 
@@ -66,26 +94,28 @@ will actually run it — a fresh venv, a bundled Python, etc., not necessarily t
 repo's main `.venv`):
 
 ```bash
-pip install -r onnx_export/requirements-onnx.txt
+pip install -r onnx/requirements.txt
 ```
 
 **Convert a file:**
 
 ```bash
-python -m onnx_export.inference \
-  --model onnx_export/exported/model.onnx \
-  --config onnx_export/exported/config.json \
+python -m onnx.inference \
+  --model onnx/exported/model.onnx \
+  --config onnx/exported/config.json \
   --input song.mp3 \
   --output song_enhanced.flac
 ```
+
+(Or, from this repo's own dev environment: `uv run python -m onnx.inference ...`.)
 
 **Self-test** (no real audio file needed — generates synthetic noise, runs the full
 pipeline end-to-end, and asserts the output is sane):
 
 ```bash
-python -m onnx_export.inference \
-  --model onnx_export/exported/model.onnx \
-  --config onnx_export/exported/config.json \
+python -m onnx.inference \
+  --model onnx/exported/model.onnx \
+  --config onnx/exported/config.json \
   --self-test
 ```
 
@@ -156,19 +186,27 @@ Error codes:
 |------|---------|
 | `export.py` | Dev-only: PyTorch checkpoint → `model.onnx` + `config.json`, with parity verification |
 | `inference.py` | Shipped, torch-free: MP3 → enhanced FLAC using onnxruntime |
-| `requirements-onnx.txt` | Pinned dependencies for `inference.py` only (not this repo's main install) |
-| `manifest.json` | Version/hash pins for the exported model, used by a downstream downloader to verify integrity before trusting a fetched `model.onnx` |
-| `exported/` | Default output directory for `export.py` (gitignored — regenerate locally, don't commit) |
+| `requirements.txt` | Pinned dependencies for `inference.py` only (not this repo's main install) |
+| `manifest.json` | Version/hash pins for the exported model, for verifying integrity before trusting a fetched `model.onnx` |
+| `exported/` | `model.onnx` + `config.json` — **committed to the repo via git-lfs**, not gitignored; this is the actual shipped model, not a build artifact to regenerate-and-discard |
 
 ### Publishing a new model version
 
-After exporting and verifying (`export.py`'s `PASS`):
+After re-exporting and verifying (`export.py`'s `PASS`):
 
 ```bash
-huggingface-cli upload rohanprasen-kedari/audioreconstruction onnx_export/exported/ checkpoints/best-onnx/
-sha256sum onnx_export/exported/model.onnx onnx_export/exported/config.json
+sha256sum onnx/exported/model.onnx onnx/exported/config.json
 ```
 
-Update `manifest.json`'s `modelVersion` and the `sha256`/`bytes` fields for both files
-to match — this is what a downstream downloader pins against instead of trusting an
-unversioned "latest" fetch.
+Update `onnx/manifest.json`'s `modelVersion` and the `sha256`/`bytes` fields for both
+files to match, then commit and push as usual:
+
+```bash
+git add onnx/exported/model.onnx onnx/exported/config.json onnx/manifest.json
+git commit -m "chore: update exported onnx model"
+git push
+```
+
+git-lfs (already configured for `onnx/exported/model.onnx` in `.gitattributes`) uploads
+the actual binary content on push — there's no separate hosting step, and nothing to
+publish to HuggingFace.

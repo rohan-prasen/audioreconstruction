@@ -1,6 +1,6 @@
 {
     "modelVersion": "1.0.0",
-    "huggingfaceUrl": "https://github.com/rohan-prasen/audioreconstruction/blob/main/onnx/exported/model.onnx",
+    "downloadUrl": "https://github.com/rohan-prasen/audioreconstruction/blob/main/onnx/exported/model.onnx",
     "files": {
         "model.onnx": {
             "sha256": "",

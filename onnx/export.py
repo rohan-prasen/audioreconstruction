@@ -17,7 +17,7 @@ DUMMY_SHAPE = (1, 2, 131072)  # matches ModelConfig.segment_length; chunking hap
 
 @click.command()
 @click.option("--checkpoint", type=click.Path(exists=True, path_type=Path), default=Path("model/checkpoints/best"))
-@click.option("--output", "output_dir", type=click.Path(path_type=Path), default=Path("onnx_export/exported"))
+@click.option("--output", "output_dir", type=click.Path(path_type=Path), default=Path("onnx/exported"))
 @click.option("--opset", default=18, type=int)
 @click.option("--skip-verify", is_flag=True)
 def main(checkpoint: Path, output_dir: Path, opset: int, skip_verify: bool) -> None:
@@ -61,8 +61,9 @@ def main(checkpoint: Path, output_dir: Path, opset: int, skip_verify: bool) -> N
         raise SystemExit(1)
 
     console.print()
-    console.print("Push to HuggingFace:")
-    console.print(f"  huggingface-cli upload rohanprasen-kedari/audioreconstruction {output_dir}/ checkpoints/best-onnx/")
+    console.print("Commit the updated model (tracked via git-lfs, see .gitattributes):")
+    console.print(f"  git add {output_dir}/model.onnx {output_dir}/config.json onnx/manifest.json")
+    console.print("  git commit -m 'chore: update exported onnx model'")
 
 
 if __name__ == "__main__":
