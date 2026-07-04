@@ -20,8 +20,6 @@ model/checkpoints/*
 !model/checkpoints/best/*
 !model/checkpoints/config.json
 
-# exported ONNX artifacts
-onnx/exported/
 
 media/recordings/*
 !media/recordings/*.gif
