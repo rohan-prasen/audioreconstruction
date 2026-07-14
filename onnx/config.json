@@ -1,0 +1,22 @@
+{
+  "sample_rate": 44100,
+  "segment_length": 131072,
+  "in_channels": 2,
+  "base_channels": 32,
+  "channel_multipliers": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    16
+  ],
+  "bottleneck_dilations": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "kernel_size": 7,
+  "decoder_kernel_size": 7
+}
