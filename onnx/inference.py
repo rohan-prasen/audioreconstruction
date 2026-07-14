@@ -89,35 +89,65 @@ def normalize_audio(waveform: np.ndarray) -> np.ndarray:
     return waveform
 
 
-def copy_metadata(src_mp3: Path, dst_flac: Path) -> None:
+def read_id3v1(path: Path) -> dict[str, str] | None:
+    """Minimal ID3v1/1.1 trailer reader — mutagen's ID3 class only parses ID3v2."""
     try:
-        id3 = ID3(str(src_mp3))
-    except Exception:
-        return
+        with open(path, "rb") as f:
+            f.seek(-128, 2)
+            tag = f.read(128)
+    except OSError:
+        return None
+    if tag[:3] != b"TAG":
+        return None
 
+    def field(data: bytes) -> str:
+        return data.split(b"\x00")[0].decode("latin-1").strip()
+
+    values = {
+        "TITLE": field(tag[3:33]),
+        "ARTIST": field(tag[33:63]),
+        "ALBUM": field(tag[63:93]),
+        "DATE": field(tag[93:97]),
+        "COMMENT": field(tag[97:127]),
+    }
+    return {k: v for k, v in values.items() if v} or None
+
+
+def copy_metadata(src_mp3: Path, dst_flac: Path) -> None:
     flac = FLAC(str(dst_flac))
     has_tags = False
-    for id3_key, vorbis_key in ID3_TO_VORBIS.items():
-        frame = id3.get(id3_key)
-        if frame is None:
-            continue
-        text = frame.text[0] if id3_key == "COMM" and frame.text else str(frame)
-        if text:
-            flac[vorbis_key] = [text]
-            has_tags = True
-
-    for key in id3:
-        if key.startswith("APIC"):
-            apic = id3[key]
-            if apic.data:
-                pic = Picture()
-                pic.type = apic.type
-                pic.mime = apic.mime
-                pic.desc = apic.desc
-                pic.data = apic.data
-                flac.add_picture(pic)
+    id3 = None
+    try:
+        id3 = ID3(str(src_mp3))
+    except Exception as exc:
+        v1_tags = read_id3v1(src_mp3)
+        if v1_tags:
+            for vorbis_key, text in v1_tags.items():
+                flac[vorbis_key] = [text]
                 has_tags = True
-            break
+        else:
+            print(f"WARN metadata copy skipped for {src_mp3.name}: {exc}", file=sys.stderr)
+
+    if id3 is not None:
+        for id3_key, vorbis_key in ID3_TO_VORBIS.items():
+            frame = id3.get(id3_key)
+            if frame is None:
+                continue
+            text = frame.text[0] if id3_key == "COMM" and frame.text else str(frame)
+            if text:
+                flac[vorbis_key] = [text]
+                has_tags = True
+
+        pictures = [id3[key] for key in id3 if key.startswith("APIC") and id3[key].data]
+        cover = next((p for p in pictures if p.type == 3), pictures[0] if pictures else None)
+        if cover:
+            pic = Picture()
+            pic.type = cover.type
+            pic.mime = cover.mime
+            pic.desc = cover.desc
+            pic.data = cover.data
+            flac.add_picture(pic)
+            has_tags = True
 
     if has_tags:
         flac.save()
