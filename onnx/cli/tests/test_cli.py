@@ -9,15 +9,26 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from audioreconstructor import cli
+from audioreconstructor import app, batch, cli
+from click.testing import CliRunner
 
 
 TARGET = cli.Target("Linux", "x86_64", "audioreconstructor-linux-x86_64", "audioreconstructor")
+
+
+class FakeProcess:
+    """Stand-in for subprocess.Popen that replays the native binary's protocol."""
+
+    def __init__(self, lines: list[str], returncode: int) -> None:
+        self.stdout = iter(lines)
+        self._returncode = returncode
+
+    def wait(self) -> int:
+        return self._returncode
 
 
 def description(data: bytes) -> dict[str, int | str]:
@@ -145,24 +156,69 @@ class CliTests(unittest.TestCase):
         self.assertIn("[FAIL] config.json: missing", messages)
         self.assertEqual(messages[-1], "Status: UNHEALTHY")
 
-    def test_inference_injects_cached_model_paths_and_preserves_exit_code(self) -> None:
+    def test_inference_streams_progress_and_injects_cached_paths(self) -> None:
         paths, _ = self.install()
-        with mock.patch.object(cli.subprocess, "run", return_value=SimpleNamespace(returncode=3)) as run:
-            result = cli.run_inference(
+        lines = ["PROGRESS 50\n", "WARN metadata copy skipped\n", "PROGRESS 100\n", "DONE result.flac\n"]
+        progress: list[int] = []
+        with mock.patch.object(cli.subprocess, "Popen", return_value=FakeProcess(lines, 0)) as popen:
+            code, error = cli.run_inference(
                 Path("source song.mp3"),
                 Path("result.flac"),
                 "cpu",
                 package_version=self.release.version,
                 target=TARGET,
                 cache_root=self.cache,
+                on_progress=progress.append,
             )
 
-        self.assertEqual(result, 3)
-        command = run.call_args.args[0]
+        self.assertEqual(code, 0)
+        self.assertIsNone(error)
+        self.assertEqual(progress, [50, 100])
+        command = popen.call_args.args[0]
         self.assertEqual(command[0], str(paths["binary"]))
         self.assertEqual(command[command.index("--model") + 1], str(paths["model"]))
         self.assertEqual(command[command.index("--config") + 1], str(paths["config"]))
         self.assertEqual(command[command.index("--input") + 1], "source song.mp3")
+
+    def test_inference_captures_error_line_and_exit_code(self) -> None:
+        self.install()
+        lines = ["PROGRESS 10\n", "ERROR INPUT_READ_FAILED could not read file\n"]
+        with mock.patch.object(cli.subprocess, "Popen", return_value=FakeProcess(lines, 2)):
+            code, error = cli.run_inference(
+                Path("x.mp3"),
+                Path("y.flac"),
+                "auto",
+                package_version=self.release.version,
+                target=TARGET,
+                cache_root=self.cache,
+            )
+
+        self.assertEqual(code, 2)
+        self.assertIn("INPUT_READ_FAILED", error)
+
+    def test_discover_audio_files_recurses_and_filters(self) -> None:
+        folder = self.root / "songs"
+        (folder / "rock").mkdir(parents=True)
+        (folder / "a.mp3").write_bytes(b"x")
+        (folder / "rock" / "b.WAV").write_bytes(b"x")
+        (folder / "notes.txt").write_bytes(b"x")
+        (folder / ".hidden.mp3").write_bytes(b"x")
+        (folder / "enhanced").mkdir()
+        (folder / "enhanced" / "old.flac").write_bytes(b"x")
+
+        found = batch.discover_audio_files(folder)
+        names = sorted(p.relative_to(folder).as_posix() for p in found)
+        self.assertEqual(names, ["a.mp3", "rock/b.WAV"])
+
+    def test_output_path_for_mirrors_tree(self) -> None:
+        folder = Path("/songs")
+        out = batch.output_path_for(Path("/songs/rock/track.wav"), folder)
+        self.assertEqual(out, Path("/songs/enhanced/rock/track.flac"))
+
+    def test_enhance_requires_exactly_one_source(self) -> None:
+        result = CliRunner().invoke(app.cli, ["enhance"])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("exactly one", result.output)
 
     def test_platform_and_cache_resolution(self) -> None:
         linux = cli.get_cache_root("Linux", {"XDG_CACHE_HOME": "/tmp/xdg"}, Path("/home/test"))

@@ -1,7 +1,6 @@
 """Install and invoke versioned Audioreconstructor GitHub Release assets."""
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
@@ -10,7 +9,6 @@ import re
 import shutil
 import stat
 import subprocess
-import sys
 import tempfile
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version as installed_version
@@ -376,7 +374,19 @@ def run_inference(
     package_version: str | None = None,
     target: Target | None = None,
     cache_root: Path | None = None,
-) -> int:
+    on_progress: Callable[[int], None] | None = None,
+    on_message: Callable[[str], None] | None = None,
+) -> tuple[int, str | None]:
+    """Run the native binary, translating its host protocol into callbacks.
+
+    The binary emits a machine protocol for its host: ``PROGRESS <int>`` per chunk,
+    ``DONE <path>`` on success, and ``ERROR <CODE> <message>`` / ``WARN <message>``.
+    We stream that output instead of letting it leak to the terminal, forwarding
+    progress to ``on_progress`` and any error/warning text to ``on_message``.
+
+    Returns ``(returncode, error_message)`` where ``error_message`` is the last
+    ``ERROR`` line seen, or ``None``.
+    """
     package_version = package_version or get_package_version()
     target = target or detect_target()
     cache_root = cache_root or get_cache_root(target.system)
@@ -384,9 +394,9 @@ def run_inference(
     missing = [key for key in ("manifest", "binary", "model", "config") if not paths[key].is_file()]
     if missing:
         names = ", ".join(paths[key].name for key in missing)
-        raise CliError(f"setup is incomplete ({names}). Run '{PACKAGE_NAME} --setup'.")
+        raise CliError(f"setup is incomplete ({names}). Run 'audioreconstructor setup'.")
     if target.system == "Linux" and not os.access(paths["binary"], os.X_OK):
-        raise CliError(f"{paths['binary']} is not executable. Run '{PACKAGE_NAME} --setup'.")
+        raise CliError(f"{paths['binary']} is not executable. Run 'audioreconstructor setup'.")
     command = [
         str(paths["binary"]),
         "--model",
@@ -401,42 +411,38 @@ def run_inference(
         provider,
     ]
     try:
-        return subprocess.run(command, check=False).returncode
+        # stderr merged into stdout so a single ordered line stream carries
+        # PROGRESS/DONE (stdout) and ERROR/WARN (stderr) without a two-pipe deadlock.
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
     except OSError as exc:
         raise CliError(f"could not start {paths['binary']}: {exc}") from exc
 
+    error_message: str | None = None
+    assert process.stdout is not None
+    for raw in process.stdout:
+        line = raw.strip()
+        if not line:
+            continue
+        kind, _, rest = line.partition(" ")
+        if kind == "PROGRESS":
+            try:
+                percent = int(rest)
+            except ValueError:
+                continue
+            if on_progress is not None:
+                on_progress(percent)
+        elif kind == "DONE":
+            continue
+        elif kind == "ERROR":
+            error_message = rest or line
+            if on_message is not None:
+                on_message(line)
+        elif on_message is not None:  # WARN or anything unexpected
+            on_message(line)
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Enhance audio with the Audioreconstructor ONNX model.")
-    actions = parser.add_mutually_exclusive_group()
-    actions.add_argument("--setup", action="store_true", help="download and verify the native runtime and model")
-    actions.add_argument("--doctor", action="store_true", help="verify cached assets and run a runtime self-test")
-    parser.add_argument("--version", action="version", version=get_package_version())
-    parser.add_argument("--input", type=Path, help="input audio file")
-    parser.add_argument("--output", type=Path, help="output FLAC file")
-    parser.add_argument("--provider", choices=("auto", "cpu", "directml"), default="auto", help="ONNX provider (default: auto)")
-    return parser
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    try:
-        if args.setup:
-            setup_assets()
-            return 0
-        if args.doctor:
-            return doctor()
-        if args.input is None and args.output is None:
-            parser.print_help()
-            return 0
-        if args.input is None or args.output is None:
-            parser.error("--input and --output must be used together")
-        return run_inference(args.input, args.output, args.provider)
-    except CliError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    return process.wait(), error_message

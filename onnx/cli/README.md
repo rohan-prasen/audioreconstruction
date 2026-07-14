@@ -8,10 +8,10 @@ runtime are downloaded only when you explicitly run setup.
 
 ```bash
 pip install audioreconstructor
-audioreconstructor --setup
+audioreconstructor setup
 ```
 
-`--setup` downloads the native executable, `model.onnx`, and `config.json` from the
+`setup` downloads the native executable, `model.onnx`, and `config.json` from the
 GitHub Release matching the installed package version. It verifies SHA-256 hashes
 before making them available locally.
 
@@ -19,24 +19,39 @@ The current release supports 64-bit Linux and 64-bit Windows.
 
 ## Use
 
+Enhance a single file:
+
 ```bash
-audioreconstructor --input song.mp3 --output song_enhanced.flac
+audioreconstructor enhance --input song.mp3 --output song_enhanced.flac
 ```
+
+Enhance a whole folder (recurses into subfolders):
+
+```bash
+audioreconstructor enhance --folder ./songs
+```
+
+Reconstructed files are written to a mirrored tree under `<folder>/enhanced/`, e.g.
+`songs/rock/track.mp3` → `songs/enhanced/rock/track.flac`.
 
 Choose the ONNX execution provider when needed:
 
 ```bash
-audioreconstructor --input song.mp3 --output song_enhanced.flac --provider cpu
+audioreconstructor enhance --input song.mp3 --output song_enhanced.flac --provider cpu
 ```
 
 `auto` is the default. Windows first tries DirectML and falls back to CPU; Linux uses
 CPU. The native executable reads supported audio through libsndfile and always writes
 FLAC output.
 
+> **Note:** v1.0.0 used top-level flags (`audioreconstructor --setup`,
+> `audioreconstructor --input ... --output ...`). These are now `setup`, `doctor`, and
+> `enhance` subcommands. Run `audioreconstructor --help` for the full command list.
+
 ## Verify installation
 
 ```bash
-audioreconstructor --doctor
+audioreconstructor doctor
 ```
 
 Doctor verifies all cached release assets and runs an actual synthetic-audio ONNX
