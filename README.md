@@ -1,12 +1,29 @@
 # Audio Reconstruction
 
-[![Publish audioreconstructor to PyPI](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml)
+[![Publich audioreconstructor to PyPi](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml)
+![PyPI Version](https://img.shields.io/pypi/v/audioreconstructor?logo=python&logoColor=white&label=PyPI&color=3776AB)
 
 Reconstruct high-fidelity audio from compressed MP3 sources using adversarial neural networks. The model restores lost high-frequency harmonics, spectral detail, and natural timbre — producing near-lossless FLAC output from lossy input.
 
 **Input:** MP3 (128 / 256 / 320 kbps) | **Output:** FLAC (~800+ kbps effective bitrate)
 
 ![](/media/recordings/demo.gif)
+
+## Quick Start (CLI)
+
+The fastest way to reconstruct audio — no training, no GPU, no repo clone. The
+[`audioreconstructor`](https://pypi.org/project/audioreconstructor/) package ships an
+ONNX build of the trained model that runs on CPU:
+
+```bash
+pip install audioreconstructor
+audioreconstructor setup                                       # downloads + verifies model
+audioreconstructor enhance --input song.mp3 --output song.flac # single file
+audioreconstructor enhance --folder ./songs                    # whole folder
+```
+
+Supports 64-bit Linux and Windows. See [`onnx/cli/README.md`](onnx/cli/README.md) for
+`doctor`, execution providers, and cache locations.
 
 ## How It Works
 
@@ -30,6 +47,7 @@ audioreconstruction/
 ├── server/            # Production server (Modal.com GPU deployment)
 ├── frontend/          # React 19 + Vite 8 + Tailwind CSS 4 UI
 ├── model/             # PyTorch model definition, training, and evaluation
+├── onnx/cli/          # audioreconstructor — pip-installable ONNX CLI (PyPI)
 ├── test/              # Audio similarity evaluation scripts
 ├── design/            # UI design briefs and mockups
 ├── docs/              # Contributing, security, code of conduct

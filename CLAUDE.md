@@ -46,6 +46,16 @@ cd server && modal deploy modal_app.py
 cd frontend && bun install && bun dev     # dev server
 cd frontend && bun lint                   # lint
 cd frontend && bun run build              # production build
+
+# ONNX distribution & CLI (self-contained under onnx/ — has its own uv.lock)
+uv run python -m onnx.export                              # PyTorch generator → onnx/exported/model.onnx
+uv run python onnx/inference.py --input song.mp3 --output song.flac   # torch-free ONNX inference
+cd onnx && pyinstaller audioreconstructor.spec            # build native executable (dist/)
+cd onnx && uv run python cli/tools/generate_manifest.py --version 1.1.0  # SHA-256 manifest for a release
+
+# Published CLI package (onnx/cli/ — the `audioreconstructor` PyPI package)
+cd onnx/cli && uv run pytest              # tests (unittest-based; also `python -m unittest`)
+cd onnx/cli && uv run ruff check .        # lint
 ```
 
 ## Architecture
@@ -93,6 +103,22 @@ Both expose the same three routes (`GET /`, `GET /health-check`, `POST /model-se
   - Rate limiting via `slowapi` (`10/minute` on GET routes, `40/minute` on `/model-serve`), strict CORS locked to `https://audioreconstruction.vercel.app`, IST-formatted structured logging.
 
 When changing inference behavior that should apply in production, edit `server/` — `backend/` is dev-only and not deployed.
+
+### ONNX distribution & CLI (`onnx/`)
+
+A **separate, self-contained delivery path** from the FastAPI servers: it runs the model with *no PyTorch* (onnxruntime only) so it can ship as a small pip package + native binary. This subtree is independent of the root project (`onnx/cli/` has its own `pyproject.toml` and `uv.lock`).
+
+- **`onnx/export.py`** — converts the trained PyTorch generator to `onnx/exported/model.onnx` + `config.json`.
+- **`onnx/inference.py`** — torch-free ONNX inference program (onnxruntime + soundfile + scipy + mutagen for ID3→Vorbis metadata copy). It's a **subprocess** with a line-oriented stdout/stderr contract: `PROGRESS <0-100>`, `DONE <path>` (exit 0), `ERROR <CODE> <msg>` (exit non-zero). One process per file.
+- **`onnx/audioreconstructor.spec`** — PyInstaller spec that bundles `inference.py` + onnxruntime/soundfile/scipy into a standalone `audioreconstructor` native executable (per-OS).
+- **`onnx/cli/`** — the published PyPI package `audioreconstructor` (Click + Rich TUI). It does **not** bundle the model or native runtime. Instead:
+  - `app.py` — Click group with three subcommands: `setup`, `doctor`, `enhance` (`--input`/`--output` for one file, `--folder` for a recursive batch).
+  - `cli.py` — downloads the native executable, `model.onnx`, and `config.json` from the **GitHub Release tagged `audioreconstructor-v<version>`** matching the installed package version, verifying SHA-256 against `manifest.json` (retries + backoff on transient errors), caches them per-version, then spawns the native binary and parses the PROGRESS/DONE/ERROR contract.
+  - `batch.py` — folder discovery + output mapping: mirrors the input tree under `<folder>/enhanced/`, skipping the output dir and hidden files.
+  - `ui.py` — Spotify-styled Rich TUI (banners, progress, result/summary panels).
+  - `tools/generate_manifest.py` — produces the `manifest.json` (SHA-256 + byte size per asset) uploaded to each release.
+
+**Release flow:** build native exe with PyInstaller → `generate_manifest.py` → upload exe + `model.onnx` + `config.json` + `manifest.json` to a GitHub Release tagged `audioreconstructor-v<version>` → bump `onnx/cli/pyproject.toml` version to match. The package version and release tag **must** stay in lockstep — `setup` derives the release tag from the installed version.
 
 ### Frontend (`frontend/`)
 
