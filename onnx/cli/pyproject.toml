@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "audioreconstructor"
-version = "1.0.1"
+version = "1.1.0"
 description = "Command-line audio reconstruction powered by the Audioreconstruction ONNX model"
 readme = "README.md"
 requires-python = ">=3.10"

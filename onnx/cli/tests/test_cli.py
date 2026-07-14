@@ -31,6 +31,23 @@ class FakeProcess:
         return self._returncode
 
 
+class _FakeResponse:
+    """Minimal urlopen() context-manager stand-in yielding fixed bytes once."""
+
+    def __init__(self, data: bytes) -> None:
+        self._data = data
+
+    def read(self, _size: int = -1) -> bytes:
+        data, self._data = self._data, b""
+        return data
+
+    def __enter__(self) -> "_FakeResponse":
+        return self
+
+    def __exit__(self, *_exc: object) -> bool:
+        return False
+
+
 def description(data: bytes) -> dict[str, int | str]:
     return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
 
@@ -219,6 +236,35 @@ class CliTests(unittest.TestCase):
         result = CliRunner().invoke(app.cli, ["enhance"])
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("exactly one", result.output)
+
+    def test_download_retries_transient_failures(self) -> None:
+        dest = self.root / "asset.bin"
+        payload = b"payload bytes"
+        calls = {"n": 0}
+
+        def flaky_urlopen(_request, timeout=None):
+            calls["n"] += 1
+            if calls["n"] < cli.DOWNLOAD_RETRIES:
+                raise cli.URLError("temporary network error")
+            return _FakeResponse(payload)
+
+        with mock.patch.object(cli, "urlopen", side_effect=flaky_urlopen), mock.patch.object(cli.time, "sleep"):
+            cli.download("https://example/asset", dest)
+
+        self.assertEqual(calls["n"], cli.DOWNLOAD_RETRIES)
+        self.assertEqual(dest.read_bytes(), payload)
+
+    def test_download_does_not_retry_client_errors(self) -> None:
+        dest = self.root / "asset.bin"
+
+        def not_found(_request, timeout=None):
+            raise cli.HTTPError("https://example/asset", 404, "Not Found", {}, None)
+
+        with mock.patch.object(cli, "urlopen", side_effect=not_found), mock.patch.object(cli.time, "sleep") as slept:
+            with self.assertRaises(cli.CliError):
+                cli.download("https://example/asset", dest)
+
+        slept.assert_not_called()
 
     def test_platform_and_cache_resolution(self) -> None:
         linux = cli.get_cache_root("Linux", {"XDG_CACHE_HOME": "/tmp/xdg"}, Path("/home/test"))

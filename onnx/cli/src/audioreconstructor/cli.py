@@ -10,6 +10,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version as installed_version
 from pathlib import Path
@@ -28,6 +29,8 @@ CONFIG_NAME = "config.json"
 DOWNLOAD_TIMEOUT_SECONDS = 30
 SELF_TEST_TIMEOUT_SECONDS = 600
 CHUNK_SIZE = 1024 * 1024
+DOWNLOAD_RETRIES = 3  # total attempts per asset on transient network errors
+DOWNLOAD_BACKOFF_SECONDS = 1.0  # base backoff, multiplied by attempt number
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 VERSION_DIR_RE = re.compile(r"^\d+(?:\.\d+)+(?:[a-zA-Z0-9._-]+)?$")
 
@@ -169,22 +172,36 @@ def _temporary_path(directory: Path, filename: str) -> Path:
 
 
 def download(url: str, destination: Path, expected: Artifact | None = None) -> None:
-    """Download one release asset and validate it before returning."""
+    """Download one release asset and validate it, retrying transient failures.
+
+    Network hiccups (connection resets, timeouts, 5xx responses) are retried up to
+    ``DOWNLOAD_RETRIES`` times with linear backoff. Permanent errors (4xx such as a
+    missing asset) fail immediately without retrying.
+    """
     request = Request(url, headers={"User-Agent": f"{PACKAGE_NAME}/{get_package_version()}"})
-    try:
-        with urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response, destination.open("wb") as handle:
-            digest = hashlib.sha256()
-            size = 0
-            while data := response.read(CHUNK_SIZE):
-                handle.write(data)
-                digest.update(data)
-                size += len(data)
-    except HTTPError as exc:
-        raise CliError(f"download failed ({exc.code}) for {url}") from exc
-    except URLError as exc:
-        raise CliError(f"download failed for {url}: {exc.reason}") from exc
-    except OSError as exc:
-        raise CliError(f"could not save {destination.name}: {exc}") from exc
+    digest = hashlib.sha256()
+    size = 0
+    for attempt in range(1, DOWNLOAD_RETRIES + 1):
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response, destination.open("wb") as handle:
+                while data := response.read(CHUNK_SIZE):
+                    handle.write(data)
+                    digest.update(data)
+                    size += len(data)
+            break  # success
+        except HTTPError as exc:
+            # 4xx are permanent (e.g. asset not found); only retry 5xx.
+            if exc.code < 500 or attempt == DOWNLOAD_RETRIES:
+                raise CliError(f"download failed ({exc.code}) for {url}") from exc
+        except URLError as exc:
+            if attempt == DOWNLOAD_RETRIES:
+                raise CliError(f"download failed for {url}: {exc.reason}") from exc
+        except OSError as exc:
+            if attempt == DOWNLOAD_RETRIES:
+                raise CliError(f"could not save {destination.name}: {exc}") from exc
+        time.sleep(DOWNLOAD_BACKOFF_SECONDS * attempt)
 
     if expected is not None:
         if size != expected.size:
