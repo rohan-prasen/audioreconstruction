@@ -2,7 +2,10 @@
 import tempfile
 from pathlib import Path
 
-from inference import read_id3v1
+try:
+    from onnx.inference import read_id3v1
+except ModuleNotFoundError:  # Supports `python onnx/test_metadata.py` as documented.
+    from inference import read_id3v1
 
 
 def _make_id3v1_tag(title: str, artist: str, album: str, year: str, comment: str) -> bytes:

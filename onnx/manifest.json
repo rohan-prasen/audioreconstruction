@@ -1,14 +1,23 @@
 {
-    "modelVersion": "1.0.0",
-    "downloadUrl": "https://github.com/rohan-prasen/audioreconstruction/blob/main/onnx/exported/model.onnx",
-    "files": {
-        "model.onnx": {
-            "sha256": "",
-            "bytes": 0
-        },
-        "config.json": {
-            "sha256": "",
-            "bytes": 0
-        }
+  "schemaVersion": 1,
+  "version": "1.0.0",
+  "releaseTag": "audioreconstructor-v1.0.0",
+  "files": {
+    "audioreconstructor-linux-x86_64": {
+      "sha256": "697bfb37da0d6de69a0a210b011e9666e97b76ae0e9f3be4ac3a05295e2117e5",
+      "bytes": 0
+    },
+    "audioreconstructor-windows-x86_64.exe": {
+      "sha256": "fc8a90ded710e0dca68f80befe5bfe593db3041d3f11047f8c97277df42bc2eb",
+      "bytes": 0
+    },
+    "model.onnx": {
+      "sha256": "b08db07825ebb164a927e9ef50dc5e566d1c13c0515af039fc2350b7a523c379",
+      "bytes": 112608277
+    },
+    "config.json": {
+      "sha256": "5368dceb6297a20fb1ea3768ffc132585776a2edc173c0e164d8ce1bc871425a",
+      "bytes": 280
     }
+  }
 }

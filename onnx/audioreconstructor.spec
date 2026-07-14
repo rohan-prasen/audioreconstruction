@@ -33,7 +33,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='echovault-enhancer',
+    name='audioreconstructor',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

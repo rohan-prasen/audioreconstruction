@@ -187,26 +187,49 @@ Error codes:
 | `export.py` | Dev-only: PyTorch checkpoint → `model.onnx` + `config.json`, with parity verification |
 | `inference.py` | Shipped, torch-free: MP3 → enhanced FLAC using onnxruntime |
 | `requirements.txt` | Pinned dependencies for `inference.py` only (not this repo's main install) |
-| `manifest.json` | Version/hash pins for the exported model, for verifying integrity before trusting a fetched `model.onnx` |
+| `audioreconstructor.spec` | PyInstaller specification for the standalone Linux/Windows executable |
+| `cli/` | Independent PyPI launcher project for `pip install audioreconstructor` |
+| `manifest.json` | Release-asset schema/template; generate the final version alongside the release assets |
 | `exported/` | `model.onnx` + `config.json` — **committed to the repo via git-lfs**, not gitignored; this is the actual shipped model, not a build artifact to regenerate-and-discard |
 
-### Publishing a new model version
+### Publishing the `audioreconstructor` CLI
 
-After re-exporting and verifying (`export.py`'s `PASS`):
+The PyPI package is a universal, dependency-free launcher. It does not use a Python
+post-install hook; users explicitly download the native runtime and model by running
+`audioreconstructor --setup` after installation.
 
-```bash
-sha256sum onnx/exported/model.onnx onnx/exported/config.json
+Build each PyInstaller executable on its target operating system. From `onnx/`, the
+specification produces `dist/audioreconstructor` on Linux and
+`dist/audioreconstructor.exe` on Windows.
+
+For a `1.0.0` release, prepare a directory containing exactly these four files:
+
+```text
+audioreconstructor-linux-x86_64
+audioreconstructor-windows-x86_64.exe
+model.onnx
+config.json
 ```
 
-Update `onnx/manifest.json`'s `modelVersion` and the `sha256`/`bytes` fields for both
-files to match, then commit and push as usual:
+The executable asset names must remain platform-tagged because a GitHub Release cannot
+contain two assets with the same name. Generate a matching manifest after all four
+assets are present:
 
 ```bash
-git add onnx/exported/model.onnx onnx/exported/config.json onnx/manifest.json
-git commit -m "chore: update exported onnx model"
-git push
+python onnx/cli/tools/generate_manifest.py \
+  --version 1.0.0 \
+  --assets-dir release-assets
 ```
 
-git-lfs (already configured for `onnx/exported/model.onnx` in `.gitattributes`) uploads
-the actual binary content on push — there's no separate hosting step, and nothing to
-publish to HuggingFace.
+Create the GitHub Release tag `audioreconstructor-v1.0.0` and upload the four assets
+plus the generated `manifest.json`. Build and check the PyPI wheel separately:
+
+```bash
+python -m build onnx/cli
+twine check onnx/cli/dist/*
+twine upload onnx/cli/dist/*
+```
+
+Publish the GitHub Release before uploading the corresponding PyPI version so setup
+can resolve every asset immediately. The source `onnx/manifest.json` records the model
+and config hashes; generate the release copy to add the two final executable hashes.
