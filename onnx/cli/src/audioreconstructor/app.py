@@ -9,7 +9,7 @@ import click
 from . import batch, ui
 from .cli import CliError, doctor as run_doctor, get_package_version, run_inference, setup_assets
 
-PROVIDERS = ("auto", "cpu", "directml")
+PROVIDERS = ("auto", "cpu", "directml", "coreml")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})

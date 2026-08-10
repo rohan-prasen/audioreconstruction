@@ -60,6 +60,8 @@ class ReleaseFixture:
         self.assets = {
             TARGET.asset_name: b"linux executable\n",
             "audioreconstructor-windows-x86_64.exe": b"windows executable\r\n",
+            "audioreconstructor-macos-arm64": b"mac arm executable\n",
+            "audioreconstructor-macos-x86_64": b"mac intel executable\n",
             cli.MODEL_NAME: b"model data",
             cli.CONFIG_NAME: b'{"sample_rate": 44100}',
         }
@@ -99,14 +101,14 @@ class CliTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def install(self) -> tuple[dict[str, Path], list[str]]:
+    def install(self, target: cli.Target = TARGET) -> tuple[dict[str, Path], list[str]]:
         messages: list[str] = []
         with mock.patch.object(cli, "release_url", side_effect=lambda _version, name: f"test://{name}"), mock.patch.object(
             cli, "download", side_effect=self.release.download
         ):
             paths = cli.setup_assets(
                 package_version=self.release.version,
-                target=TARGET,
+                target=target,
                 cache_root=self.cache,
                 report=messages.append,
             )
@@ -269,10 +271,34 @@ class CliTests(unittest.TestCase):
     def test_platform_and_cache_resolution(self) -> None:
         linux = cli.get_cache_root("Linux", {"XDG_CACHE_HOME": "/tmp/xdg"}, Path("/home/test"))
         windows = cli.get_cache_root("Windows", {"LOCALAPPDATA": "C:/Users/test/AppData/Local"}, Path("/home/test"))
+        darwin = cli.get_cache_root("Darwin", {}, Path("/Users/test"))
         self.assertEqual(linux, Path("/tmp/xdg") / cli.PACKAGE_NAME)
         self.assertEqual(windows, Path("C:/Users/test/AppData/Local") / cli.PACKAGE_NAME / "Cache")
+        self.assertEqual(darwin, Path("/Users/test/Library/Caches") / cli.PACKAGE_NAME)
         with self.assertRaises(cli.CliError):
-            cli.detect_target("Darwin", "arm64")
+            cli.detect_target("Darwin", "i386")
+        with self.assertRaises(cli.CliError):
+            cli.detect_target("SunOS", "x86_64")
+        with self.assertRaises(cli.CliError):
+            cli.detect_target("Linux", "arm64")
+
+    def test_detect_target_darwin_variants(self) -> None:
+        arm = cli.detect_target("Darwin", "arm64")
+        self.assertEqual(arm.asset_name, "audioreconstructor-macos-arm64")
+        self.assertEqual(arm.architecture, "arm64")
+        self.assertEqual(arm.executable_name, "audioreconstructor")
+        intel = cli.detect_target("Darwin", "x86_64", translated=False)
+        self.assertEqual(intel.asset_name, "audioreconstructor-macos-x86_64")
+        self.assertEqual(intel.architecture, "x86_64")
+        rosetta = cli.detect_target("Darwin", "x86_64", translated=True)
+        self.assertEqual(rosetta.asset_name, "audioreconstructor-macos-arm64")
+        self.assertEqual(rosetta.architecture, "arm64")
+
+    def test_setup_marks_darwin_binary_executable(self) -> None:
+        darwin_target = cli.Target("Darwin", "arm64", "audioreconstructor-macos-arm64", "audioreconstructor")
+        paths, _ = self.install(target=darwin_target)
+        self.assertTrue(paths["binary"].is_file())
+        self.assertTrue(os.access(paths["binary"], os.X_OK))
 
     def test_release_manifest_generator_records_each_asset(self) -> None:
         assets_dir = self.root / "release-assets"

@@ -187,7 +187,7 @@ Error codes:
 | `export.py` | Dev-only: PyTorch checkpoint → `model.onnx` + `config.json`, with parity verification |
 | `inference.py` | Shipped, torch-free: MP3 → enhanced FLAC using onnxruntime |
 | `requirements.txt` | Pinned dependencies for `inference.py` only (not this repo's main install) |
-| `audioreconstructor.spec` | PyInstaller specification for the standalone Linux/Windows executable |
+| `audioreconstructor.spec` | PyInstaller specification for the standalone Linux/Windows/macOS executable |
 | `cli/` | Independent PyPI launcher project for `pip install audioreconstructor` |
 | `manifest.json` | Release-asset schema/template; generate the final version alongside the release assets |
 | `exported/` | `model.onnx` + `config.json` — **committed to the repo via git-lfs**, not gitignored; this is the actual shipped model, not a build artifact to regenerate-and-discard |
@@ -198,30 +198,46 @@ The PyPI package is a universal, dependency-free launcher. It does not use a Pyt
 post-install hook; users explicitly download the native runtime and model by running
 `audioreconstructor --setup` after installation.
 
-Build each PyInstaller executable on its target operating system. From `onnx/`, the
-specification produces `dist/audioreconstructor` on Linux and
+Build the Linux and Windows PyInstaller executables on their target operating systems.
+From `onnx/`, the specification produces `dist/audioreconstructor` on Linux/macOS and
 `dist/audioreconstructor.exe` on Windows.
 
-For a `1.0.0` release, prepare a directory containing exactly these four files:
+The two macOS executables are built by CI. Dispatch the workflow and download both
+artifacts into the release-assets directory:
+
+```bash
+gh workflow run build-macos-binaries.yml
+gh run watch
+gh run download <run-id> -D release-assets
+# artifact zips drop the execute bit; restore it for any local testing
+chmod +x release-assets/audioreconstructor-macos-*
+```
+
+(End users are unaffected by the execute bit — `audioreconstructor setup` chmods the
+binary after download.)
+
+For a release, prepare a directory containing exactly these six files:
 
 ```text
 audioreconstructor-linux-x86_64
 audioreconstructor-windows-x86_64.exe
+audioreconstructor-macos-arm64
+audioreconstructor-macos-x86_64
 model.onnx
 config.json
 ```
 
 The executable asset names must remain platform-tagged because a GitHub Release cannot
-contain two assets with the same name. Generate a matching manifest after all four
+contain two assets with the same name. Generate a matching manifest after all six
 assets are present:
 
 ```bash
 python onnx/cli/tools/generate_manifest.py \
-  --version 1.0.0 \
+  --version 1.2.0 \
   --assets-dir release-assets
 ```
 
-Create the GitHub Release tag `audioreconstructor-v1.0.0` and upload the four assets
+Create the GitHub Release tag `audioreconstructor-v1.2.0` and upload the six assets
 plus the generated `manifest.json`. Build and check the PyPI wheel separately:
 
 ```bash

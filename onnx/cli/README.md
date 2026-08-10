@@ -15,7 +15,8 @@ audioreconstructor setup
 GitHub Release matching the installed package version. It verifies SHA-256 hashes
 before making them available locally.
 
-The current release supports 64-bit Linux and 64-bit Windows.
+The current release supports 64-bit Linux, 64-bit Windows, and macOS (Apple Silicon
+and Intel; macOS requires version 1.2.0 or later).
 
 ## Use
 
@@ -40,9 +41,9 @@ Choose the ONNX execution provider when needed:
 audioreconstructor enhance --input song.mp3 --output song_enhanced.flac --provider cpu
 ```
 
-`auto` is the default. Windows first tries DirectML and falls back to CPU; Linux uses
-CPU. The native executable reads supported audio through libsndfile and always writes
-FLAC output.
+`auto` is the default. Windows first tries DirectML and falls back to CPU; macOS first
+tries Core ML (`--provider coreml`) and falls back to CPU; Linux uses CPU. The native
+executable reads supported audio through libsndfile and always writes FLAC output.
 
 > **Note:** v1.0.0 used top-level flags (`audioreconstructor --setup`,
 > `audioreconstructor --input ... --output ...`). These are now `setup`, `doctor`, and
@@ -64,6 +65,7 @@ Setup prints the exact locations it uses. By default they are:
 - Linux: `$XDG_CACHE_HOME/audioreconstructor/<version>` or
   `~/.cache/audioreconstructor/<version>`
 - Windows: `%LOCALAPPDATA%\\audioreconstructor\\Cache\\<version>`
+- macOS: `~/Library/Caches/audioreconstructor/<version>`
 
 Running setup for an upgraded package version removes older cached versions after the
 new version has been fully verified.

@@ -71,16 +71,43 @@ def release_url(version: str, asset_name: str) -> str:
     return f"https://github.com/{REPOSITORY}/releases/download/{tag}/{asset}"
 
 
-def detect_target(system: str | None = None, machine: str | None = None) -> Target:
+def _rosetta_translated() -> bool:
+    """True when this process runs under Rosetta 2 on Apple Silicon."""
+    try:
+        result = subprocess.run(
+            ["sysctl", "-in", "sysctl.proc_translated"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return result.stdout.strip() == "1"
+    except OSError:
+        return False
+
+
+def detect_target(
+    system: str | None = None,
+    machine: str | None = None,
+    translated: bool | None = None,
+) -> Target:
     system = system or platform.system()
     machine = (machine or platform.machine()).lower()
-    if machine not in {"x86_64", "amd64"}:
-        raise CliError(f"unsupported architecture: {machine}. Only x86-64 is supported.")
-    if system == "Linux":
-        return Target(system, "x86_64", "audioreconstructor-linux-x86_64", "audioreconstructor")
-    if system == "Windows":
+    if system in {"Linux", "Windows"}:
+        if machine not in {"x86_64", "amd64"}:
+            raise CliError(f"unsupported architecture: {machine}. Only x86-64 is supported on {system}.")
+        if system == "Linux":
+            return Target(system, "x86_64", "audioreconstructor-linux-x86_64", "audioreconstructor")
         return Target(system, "x86_64", "audioreconstructor-windows-x86_64.exe", "audioreconstructor.exe")
-    raise CliError(f"unsupported operating system: {system}. Only Linux and Windows are supported.")
+    if system == "Darwin":
+        if machine == "x86_64" and (translated if translated is not None else _rosetta_translated()):
+            machine = "arm64"  # Rosetta 2: the downloaded binary runs natively, prefer arm64
+        if machine == "arm64":
+            return Target(system, "arm64", "audioreconstructor-macos-arm64", "audioreconstructor")
+        if machine == "x86_64":
+            return Target(system, "x86_64", "audioreconstructor-macos-x86_64", "audioreconstructor")
+        raise CliError(f"unsupported architecture: {machine}. Only arm64 and x86-64 are supported on macOS.")
+    raise CliError(f"unsupported operating system: {system}. Only Linux, Windows, and macOS are supported.")
 
 
 def get_cache_root(
@@ -96,6 +123,8 @@ def get_cache_root(
         local_app_data = environ.get("LOCALAPPDATA")
         base = Path(local_app_data) if local_app_data else home / "AppData" / "Local"
         return base / PACKAGE_NAME / "Cache"
+    if system == "Darwin":
+        return home / "Library" / "Caches" / PACKAGE_NAME
     raise CliError(f"unsupported operating system: {system}")
 
 
@@ -211,7 +240,7 @@ def download(url: str, destination: Path, expected: Artifact | None = None) -> N
 
 
 def _make_executable(path: Path, target: Target) -> None:
-    if target.system != "Linux":
+    if target.system == "Windows":
         return
     try:
         path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -366,7 +395,7 @@ def doctor(
         report(f"[{label}] {asset_name}: {detail}")
         healthy = healthy and valid
 
-    if target.system == "Linux":
+    if target.system != "Windows":
         executable = paths["binary"].is_file() and os.access(paths["binary"], os.X_OK)
         report(f"[{'PASS' if executable else 'FAIL'}] Binary execute permission")
         healthy = healthy and executable
@@ -412,7 +441,7 @@ def run_inference(
     if missing:
         names = ", ".join(paths[key].name for key in missing)
         raise CliError(f"setup is incomplete ({names}). Run 'audioreconstructor setup'.")
-    if target.system == "Linux" and not os.access(paths["binary"], os.X_OK):
+    if target.system != "Windows" and not os.access(paths["binary"], os.X_OK):
         raise CliError(f"{paths['binary']} is not executable. Run 'audioreconstructor setup'.")
     command = [
         str(paths["binary"]),

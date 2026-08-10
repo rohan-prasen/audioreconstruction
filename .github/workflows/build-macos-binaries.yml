@@ -1,0 +1,61 @@
+name: Build audioreconstructor macOS binaries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15 # Apple Silicon
+            arch: arm64
+            asset: audioreconstructor-macos-arm64
+          - runner: macos-15-intel
+            arch: x86_64
+            asset: audioreconstructor-macos-x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      # No LFS: the spec bundles code only, not model.onnx.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build dependencies
+        run: python -m pip install -r onnx/requirements.txt
+
+      - name: Build one-file binary
+        working-directory: onnx
+        run: pyinstaller --clean --noconfirm audioreconstructor.spec
+
+      - name: Verify architecture
+        run: |
+          file onnx/dist/audioreconstructor
+          lipo -archs onnx/dist/audioreconstructor | grep -w "${{ matrix.arch }}"
+
+      # A bare run must exit 2 with argparse usage output. That only happens after
+      # the onefile bundle unpacked and onnxruntime/scipy/soundfile/mutagen imported.
+      - name: Smoke test
+        run: |
+          set +e
+          onnx/dist/audioreconstructor > smoke.log 2>&1
+          code=$?
+          set -e
+          cat smoke.log
+          test "$code" -eq 2
+          grep -q "usage:" smoke.log
+
+      - name: Rename to release asset name
+        run: mv onnx/dist/audioreconstructor "onnx/dist/${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: onnx/dist/${{ matrix.asset }}
+          if-no-files-found: error
