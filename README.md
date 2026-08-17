@@ -7,7 +7,7 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 
 **Input:** MP3 (128 / 256 / 320 kbps) | **Output:** FLAC (~800+ kbps effective bitrate)
 
-![](/media/recordings/demo.gif)
+![](/media/recordings/cli-demo.gif)
 
 ## Quick Start (CLI)
 
@@ -56,14 +56,14 @@ audioreconstruction/
 
 ## Tech Stack
 
-| Layer      | Technology                            |
-|------------|---------------------------------------|
-| Model      | PyTorch, torchaudio, safetensors      |
-| Backend    | FastAPI, uvicorn, SlowAPI             |
-| Deployment | Modal.com (GPU serverless — T4)       |
-| Frontend   | React 19, Vite 8, Tailwind CSS 4     |
-| Metrics    | PESQ, SNR (perceptual evaluation)     |
-| Tooling    | uv (Python), Bun (JS), Ruff (lint)   |
+| Layer      | Technology                         |
+| ---------- | ---------------------------------- |
+| Model      | PyTorch, torchaudio, safetensors   |
+| Backend    | FastAPI, uvicorn, SlowAPI          |
+| Deployment | Modal.com (GPU serverless — T4)    |
+| Frontend   | React 19, Vite 8, Tailwind CSS 4   |
+| Metrics    | PESQ, SNR (perceptual evaluation)  |
+| Tooling    | uv (Python), Bun (JS), Ruff (lint) |
 
 ## Getting Started
 
