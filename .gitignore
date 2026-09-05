@@ -12,6 +12,10 @@ wheels/
 # Virtual environments
 .venv
 
+# IDE settings
+.idea
+.vscode
+
 # outputfiles
 output/
 
