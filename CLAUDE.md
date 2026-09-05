@@ -152,3 +152,17 @@ data/
 - Audio is always stereo (`in_channels=2`), 44.1kHz
 - Model weights use safetensors format exclusively (not `.pt`)
 - Upload limit on both inference servers: 25 MB / 6 minutes duration
+
+## Agent skills
+
+### Issue tracker
+
+Dual: features & live work in **Linear** (project `audioreconstruction`, team Tinkerers, via `mcp__linear-server__*`); public/community issues & external PRs in **GitHub** (`rohan-prasen/audioreconstruction`, via `gh`). See `docs/agents/issue-tracker.md` for routing.
+
+### Triage labels
+
+Five canonical roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`) — GitHub labels; on Linear they map to statuses (Backlog/Todo/Canceled) plus `ready-for-agent`/`ready-for-human`/`needs-info` labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (`CONTEXT.md` + `docs/adr/` at the repo root). See `docs/agents/domain.md`.
