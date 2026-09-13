@@ -17,7 +17,7 @@ from audioreconstructor import app, batch, cli
 from click.testing import CliRunner
 
 
-TARGET = cli.Target("Linux", "x86_64", "audioreconstructor-linux-x86_64", "audioreconstructor")
+TARGET = cli.Target("Linux", "amd64", "audioreconstructor-linux-amd64", "audioreconstructor")
 
 
 class FakeProcess:
@@ -59,9 +59,11 @@ class ReleaseFixture:
         self.root = root
         self.assets = {
             TARGET.asset_name: b"linux executable\n",
-            "audioreconstructor-windows-x86_64.exe": b"windows executable\r\n",
-            "audioreconstructor-macos-arm64": b"mac arm executable\n",
-            "audioreconstructor-macos-x86_64": b"mac intel executable\n",
+            "audioreconstructor-linux-x86": b"linux x86 executable\n",
+            "audioreconstructor-windows-amd64.exe": b"windows executable\r\n",
+            "audioreconstructor-windows-x86.exe": b"windows x86 executable\r\n",
+            "audioreconstructor-macos-amd64": b"mac arm executable\n",
+            "audioreconstructor-macos-intel": b"mac intel executable\n",
             cli.MODEL_NAME: b"model data",
             cli.CONFIG_NAME: b'{"sample_rate": 44100}',
         }
@@ -284,18 +286,18 @@ class CliTests(unittest.TestCase):
 
     def test_detect_target_darwin_variants(self) -> None:
         arm = cli.detect_target("Darwin", "arm64")
-        self.assertEqual(arm.asset_name, "audioreconstructor-macos-arm64")
+        self.assertEqual(arm.asset_name, "audioreconstructor-macos-amd64")
         self.assertEqual(arm.architecture, "arm64")
         self.assertEqual(arm.executable_name, "audioreconstructor")
         intel = cli.detect_target("Darwin", "x86_64", translated=False)
-        self.assertEqual(intel.asset_name, "audioreconstructor-macos-x86_64")
-        self.assertEqual(intel.architecture, "x86_64")
+        self.assertEqual(intel.asset_name, "audioreconstructor-macos-intel")
+        self.assertEqual(intel.architecture, "intel")
         rosetta = cli.detect_target("Darwin", "x86_64", translated=True)
-        self.assertEqual(rosetta.asset_name, "audioreconstructor-macos-arm64")
+        self.assertEqual(rosetta.asset_name, "audioreconstructor-macos-amd64")
         self.assertEqual(rosetta.architecture, "arm64")
 
     def test_setup_marks_darwin_binary_executable(self) -> None:
-        darwin_target = cli.Target("Darwin", "arm64", "audioreconstructor-macos-arm64", "audioreconstructor")
+        darwin_target = cli.Target("Darwin", "arm64", "audioreconstructor-macos-amd64", "audioreconstructor")
         paths, _ = self.install(target=darwin_target)
         self.assertTrue(paths["binary"].is_file())
         self.assertTrue(os.access(paths["binary"], os.X_OK))

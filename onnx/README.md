@@ -202,34 +202,34 @@ Build the Linux and Windows PyInstaller executables on their target operating sy
 From `onnx/`, the specification produces `dist/audioreconstructor` on Linux/macOS and
 `dist/audioreconstructor.exe` on Windows.
 
-The two macOS executables are built by CI. Dispatch the workflow and download both
-artifacts into the release-assets directory:
+The six native executables are built by the matrix workflow. Dispatch it and download
+the aggregated release artifact:
 
 ```bash
-gh workflow run build-macos-binaries.yml
+gh workflow run build-matrix-deploy.yml
 gh run watch
 gh run download <run-id> -D release-assets
-# artifact zips drop the execute bit; restore it for any local testing
-chmod +x release-assets/audioreconstructor-macos-*
 ```
 
 (End users are unaffected by the execute bit — `audioreconstructor setup` chmods the
 binary after download.)
 
-For a release, prepare a directory containing exactly these six files:
+For a release, the workflow prepares a directory containing these eight files:
 
 ```text
-audioreconstructor-linux-x86_64
-audioreconstructor-windows-x86_64.exe
-audioreconstructor-macos-arm64
-audioreconstructor-macos-x86_64
+audioreconstructor-linux-amd64
+audioreconstructor-linux-x86
+audioreconstructor-windows-amd64.exe
+audioreconstructor-windows-x86.exe
+audioreconstructor-macos-amd64
+audioreconstructor-macos-intel
 model.onnx
 config.json
 ```
 
 The executable asset names must remain platform-tagged because a GitHub Release cannot
 contain two assets with the same name. Generate a matching manifest after all six
-assets are present:
+executables are present:
 
 ```bash
 python onnx/cli/tools/generate_manifest.py \
@@ -237,8 +237,9 @@ python onnx/cli/tools/generate_manifest.py \
   --assets-dir release-assets
 ```
 
-Create the GitHub Release tag `audioreconstructor-v1.2.0` and upload the six assets
-plus the generated `manifest.json`. Build and check the PyPI wheel separately:
+Create the GitHub Release tag `audioreconstructor-v1.2.0` and upload the eight assets
+plus the generated `manifest.json`. The matrix workflow performs this upload for a
+published release. Build and check the PyPI wheel separately:
 
 ```bash
 python -m build onnx/cli

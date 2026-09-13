@@ -7,10 +7,12 @@ import json
 from pathlib import Path
 
 ASSET_NAMES = (
-    "audioreconstructor-linux-x86_64",
-    "audioreconstructor-windows-x86_64.exe",
-    "audioreconstructor-macos-arm64",
-    "audioreconstructor-macos-x86_64",
+    "audioreconstructor-linux-amd64",
+    "audioreconstructor-linux-x86",
+    "audioreconstructor-windows-amd64.exe",
+    "audioreconstructor-windows-x86.exe",
+    "audioreconstructor-macos-amd64",
+    "audioreconstructor-macos-intel",
     "model.onnx",
     "config.json",
 )
