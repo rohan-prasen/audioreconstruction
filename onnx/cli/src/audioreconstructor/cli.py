@@ -95,17 +95,17 @@ def detect_target(
     machine = (machine or platform.machine()).lower()
     if system in {"Linux", "Windows"}:
         if machine not in {"x86_64", "amd64"}:
-            raise CliError(f"unsupported architecture: {machine}. Only x86-64 is supported on {system}.")
+            raise CliError(f"unsupported architecture: {machine}. Only amd64 is supported on {system}.")
         if system == "Linux":
-            return Target(system, "x86_64", "audioreconstructor-linux-x86_64", "audioreconstructor")
-        return Target(system, "x86_64", "audioreconstructor-windows-x86_64.exe", "audioreconstructor.exe")
+            return Target(system, "amd64", "audioreconstructor-linux-amd64", "audioreconstructor")
+        return Target(system, "amd64", "audioreconstructor-windows-amd64.exe", "audioreconstructor.exe")
     if system == "Darwin":
         if machine == "x86_64" and (translated if translated is not None else _rosetta_translated()):
             machine = "arm64"  # Rosetta 2: the downloaded binary runs natively, prefer arm64
         if machine == "arm64":
-            return Target(system, "arm64", "audioreconstructor-macos-arm64", "audioreconstructor")
+            return Target(system, "arm64", "audioreconstructor-macos-amd64", "audioreconstructor")
         if machine == "x86_64":
-            return Target(system, "x86_64", "audioreconstructor-macos-x86_64", "audioreconstructor")
+            return Target(system, "intel", "audioreconstructor-macos-intel", "audioreconstructor")
         raise CliError(f"unsupported architecture: {machine}. Only arm64 and x86-64 are supported on macOS.")
     raise CliError(f"unsupported operating system: {system}. Only Linux, Windows, and macOS are supported.")
 

@@ -22,8 +22,9 @@ audioreconstructor enhance --input song.mp3 --output song.flac # single file
 audioreconstructor enhance --folder ./songs                    # whole folder
 ```
 
-Supports 64-bit Linux and Windows. See [`onnx/cli/README.md`](onnx/cli/README.md) for
-`doctor`, execution providers, and cache locations.
+Supports 64-bit Linux and Windows, plus macOS Apple Silicon and Intel builds.
+See [`onnx/cli/README.md`](onnx/cli/README.md) for `doctor`, execution providers,
+and cache locations.
 
 ## How It Works
 

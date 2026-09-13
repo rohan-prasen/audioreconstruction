@@ -16,7 +16,9 @@ GitHub Release matching the installed package version. It verifies SHA-256 hashe
 before making them available locally.
 
 The current release supports 64-bit Linux, 64-bit Windows, and macOS (Apple Silicon
-and Intel; macOS requires version 1.2.0 or later).
+and Intel; macOS requires version 1.2.0 or later). Release assets use explicit
+`amd64`, `x86`, and `intel` labels; the Linux/Windows `x86` labels are compatibility
+aliases for the 64-bit hosted builds, not 32-bit binaries.
 
 ## Use
 
