@@ -9,7 +9,7 @@ Scripts for comparing audio signal similarity between file pairs. Useful for eva
 Compare an original FLAC against a reconstructed FLAC:
 
 ```bash
-uv run python -m test.eval_FLAC "path/to/original.flac" "path/to/reconstructed.flac"
+uv run python -m test.eval_flac "path/to/original.flac" "path/to/reconstructed.flac"
 ```
 
 ### Sample Output

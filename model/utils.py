@@ -95,7 +95,7 @@ def set_seed(seed: int) -> None:
 def copy_metadata(src_mp3: Path, dst_flac: Path) -> None:
     try:
         id3 = ID3(str(src_mp3))
-    except Exception:
+    except Exception:  # noqa: BLE001 - metadata copy is best-effort; skip on any read error
         return
 
     flac = FLAC(str(dst_flac))

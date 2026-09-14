@@ -9,7 +9,6 @@ import torchaudio
 import torchaudio.functional as F
 from pesq import pesq as _pesq
 
-
 _PESQ_SR = {
     "nb": 8000,
     "wb": 16000,
@@ -54,7 +53,7 @@ def compute_pesq(ref_path: Path, deg_path: Path, mode: str) -> float:
             continue
         try:
             scores.append(_pesq(target_sr, ref_chunk, deg_chunk, mode))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - skip any chunk PESQ cannot score, keep the rest
             click.echo(f"[warn] chunk {start//target_sr}s skipped: {e}", err=True)
 
     if not scores:

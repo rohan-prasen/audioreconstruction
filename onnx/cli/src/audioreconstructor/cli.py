@@ -11,10 +11,11 @@ import stat
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from importlib.metadata import PackageNotFoundError, version as installed_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as installed_version
 from pathlib import Path
-from typing import Callable, Mapping, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -195,8 +196,8 @@ def _read_manifest(path: Path, package_version: str, required_assets: Sequence[s
 
 
 def _temporary_path(directory: Path, filename: str) -> Path:
-    handle = tempfile.NamedTemporaryFile(prefix=f".{filename}.", suffix=".part", dir=directory, delete=False)
-    handle.close()
+    with tempfile.NamedTemporaryFile(prefix=f".{filename}.", suffix=".part", dir=directory, delete=False) as handle:
+        pass
     return Path(handle.name)
 
 

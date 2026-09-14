@@ -1,8 +1,8 @@
 """Rich rendering helpers — Spotify-inspired: green accent, otherwise mono."""
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Callable, Iterator
 
 from rich.box import ROUNDED
 from rich.console import Console, Group

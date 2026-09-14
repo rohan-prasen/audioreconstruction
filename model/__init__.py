@@ -1,11 +1,11 @@
-from model.config import ModelConfig, TrainConfig, DataConfig
-from model.generator import Generator
+from model.config import DataConfig, ModelConfig, TrainConfig
 from model.discriminator import MultiScaleDiscriminator
+from model.generator import Generator
 
 __all__ = [
-    "ModelConfig",
-    "TrainConfig",
     "DataConfig",
     "Generator",
+    "ModelConfig",
     "MultiScaleDiscriminator",
+    "TrainConfig",
 ]

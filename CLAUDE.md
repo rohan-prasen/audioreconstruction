@@ -33,7 +33,7 @@ uv run python -m model.evaluate --checkpoint model/checkpoints/best --input data
 uv run python -m model.export --checkpoint model/checkpoints/best
 
 # Audio similarity evaluation (standalone CLIs, not pytest)
-uv run python -m test.eval_FLAC "original.flac" "reconstructed.flac"
+uv run python -m test.eval_flac "original.flac" "reconstructed.flac"
 uv run python -m test.eval_mp3 "reference.flac" "compressed.mp3"
 
 # Local dev backend (loads model/ package directly)
@@ -126,7 +126,7 @@ React 19 + Vite 8 + Tailwind CSS 4 — a single-file app in `src/App.jsx` that u
 
 ### Audio similarity evaluation (`test/`)
 
-Standalone CLI scripts (not a pytest suite) for comparing signal similarity between file pairs — `eval_FLAC.py`, `eval_mp3.py`, plus lower-level metric modules (`snr.py`, `pesq.py`, `lsd.py`, `mel_ssim.py`, `si_sdr.py`). Run via `python -m test.<script>`.
+Standalone CLI scripts (not a pytest suite) for comparing signal similarity between file pairs — `eval_flac.py`, `eval_mp3.py`, plus lower-level metric modules (`snr.py`, `pesq.py`, `lsd.py`, `mel_ssim.py`, `si_sdr.py`). Run via `python -m test.<script>`.
 
 ### Change proposals (`openspec/`)
 

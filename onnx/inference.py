@@ -119,7 +119,7 @@ def copy_metadata(src_mp3: Path, dst_flac: Path) -> None:
     id3 = None
     try:
         id3 = ID3(str(src_mp3))
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - best-effort: fall back to ID3v1 on any ID3 read error
         v1_tags = read_id3v1(src_mp3)
         if v1_tags:
             for vorbis_key, text in v1_tags.items():

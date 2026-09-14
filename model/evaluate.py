@@ -84,7 +84,7 @@ def compute_metrics(
 
     try:
         pesq_score = pesq(eval_sr, ref_16k, rec_16k, "wb")
-    except Exception:
+    except Exception:  # noqa: BLE001 - any PESQ failure yields NaN, not a crash
         pesq_score = float("nan")
 
     return {"snr_db": snr_val, "pesq": pesq_score}

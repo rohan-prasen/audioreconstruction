@@ -5,7 +5,14 @@ from pathlib import Path
 import click
 import torch
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 from torch.utils.data import DataLoader
 
 from model.config import DataConfig, ModelConfig, TrainConfig
