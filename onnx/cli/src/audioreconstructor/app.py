@@ -7,7 +7,8 @@ from pathlib import Path
 import click
 
 from . import batch, ui
-from .cli import CliError, doctor as run_doctor, get_package_version, run_inference, setup_assets
+from .cli import CliError, get_package_version, run_inference, setup_assets
+from .cli import doctor as run_doctor
 
 PROVIDERS = ("auto", "cpu", "directml", "coreml")
 

@@ -63,9 +63,8 @@ def _preprocess_audio(
     cfg,
 ) -> tuple[list[tuple[torch.Tensor, int]], Path]:
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=str(TEMP_DIR))
-    tmp.write(content)
-    tmp.close()
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=str(TEMP_DIR)) as tmp:
+        tmp.write(content)
     input_path = Path(tmp.name)
 
     info = sf.info(str(input_path))
@@ -103,8 +102,8 @@ def _preprocess_audio(
 
 def _encode_flac(result: torch.Tensor, sample_rate: int, src_mp3: Path | None = None) -> bytes:
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False, dir=str(TEMP_DIR))
-    tmp.close()
+    with tempfile.NamedTemporaryFile(suffix=".flac", delete=False, dir=str(TEMP_DIR)) as tmp:
+        pass
     output_path = Path(tmp.name)
     try:
         write_flac(result, output_path, sample_rate)
@@ -153,7 +152,7 @@ async def lifespan(app: FastAPI):
         app.state.batcher = batcher
         app.state.cfg = cfg
         app.state.ready = True
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - keep app alive but not-ready if startup/warmup fails
         logger.error("Startup failed: %s", exc)
         app.state.ready = False
         app.state.batcher = None

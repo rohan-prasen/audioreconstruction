@@ -120,7 +120,7 @@ class InferenceBatcher:
             for i, req in enumerate(batch):
                 if not req.future.cancelled():
                     req.future.set_result(outputs[i].cpu())
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - route any inference error to waiters, keep loop alive
             logger.error("Batch inference failed: %s", exc)
             for req in batch:
                 if not req.future.done():

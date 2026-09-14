@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
         app.state.generator = generator
         app.state.device = device
         app.state.model_loaded = True
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - degrade to model-unavailable if checkpoint load fails
         logger.warning("Could not load model from %s: %s", CHECKPOINT_DIR, exc)
         app.state.generator = None
         app.state.device = device
@@ -124,16 +124,15 @@ async def model_serve(file: UploadFile):
     input_tmp = None
     output_tmp = None
     try:
-        input_tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-        input_tmp.write(content)
-        input_tmp.close()
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as input_tmp:
+            input_tmp.write(content)
 
         generator = app.state.generator
         device = app.state.device
         result = _reconstruct_sf(generator, Path(input_tmp.name), device)
 
-        output_tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False)
-        output_tmp.close()
+        with tempfile.NamedTemporaryFile(suffix=".flac", delete=False) as output_tmp:
+            pass
         audio_out = result.squeeze(0).T.numpy()
         sf.write(output_tmp.name, audio_out, generator.cfg.sample_rate)
         copy_metadata(Path(input_tmp.name), Path(output_tmp.name))

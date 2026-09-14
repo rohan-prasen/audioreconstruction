@@ -16,7 +16,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from audioreconstructor import app, batch, cli
 from click.testing import CliRunner
 
-
 TARGET = cli.Target("Linux", "amd64", "audioreconstructor-linux-amd64", "audioreconstructor")
 
 
@@ -41,7 +40,7 @@ class _FakeResponse:
         data, self._data = self._data, b""
         return data
 
-    def __enter__(self) -> "_FakeResponse":
+    def __enter__(self) -> _FakeResponse:  # noqa: PYI034 - test fake; typing.Self requires 3.11
         return self
 
     def __exit__(self, *_exc: object) -> bool:
@@ -264,9 +263,12 @@ class CliTests(unittest.TestCase):
         def not_found(_request, timeout=None):
             raise cli.HTTPError("https://example/asset", 404, "Not Found", {}, None)
 
-        with mock.patch.object(cli, "urlopen", side_effect=not_found), mock.patch.object(cli.time, "sleep") as slept:
-            with self.assertRaises(cli.CliError):
-                cli.download("https://example/asset", dest)
+        with (
+            mock.patch.object(cli, "urlopen", side_effect=not_found),
+            mock.patch.object(cli.time, "sleep") as slept,
+            self.assertRaises(cli.CliError),
+        ):
+            cli.download("https://example/asset", dest)
 
         slept.assert_not_called()
 
