@@ -37,6 +37,9 @@ design/index.html
 .github/skills/impeccable/scripts
 .opencode/skills/impeccable/scripts/
 
+# vendored skill/plugin docs (bloat, not source)
+.agents/
+
 .claude-flow/*
 graphify-out/cost.json
 graphify-out/
