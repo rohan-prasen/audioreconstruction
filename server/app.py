@@ -64,9 +64,18 @@ logger = logging.getLogger("audioreconstruction")
 
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 UPLOAD_CHUNK = 1024 * 1024
-MODEL_CHECKPOINT_DIR = Path("/checkpoints/best/")
+MODEL_CHECKPOINT_DIR = Path(os.getenv("CHECKPOINT_DIR", "/checkpoints/best/"))
 TEMP_DIR = Path(tempfile.gettempdir()) / "audioreconstruction"
 INFERENCE_TIMEOUT = 180
+
+# Comma-separated. Defaults to production only; set in dev to add localhost.
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "ALLOWED_ORIGINS", "https://audioreconstruction.vercel.app"
+    ).split(",")
+    if o.strip()
+]
 
 # Exactly what new_blob_name() produces. Nothing else is accepted.
 _BLOB_NAME_RE = re.compile(r"^[0-9a-f]{32}\.mp3$")
@@ -190,7 +199,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://audioreconstruction.vercel.app"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "HEAD", "POST"],
     allow_headers=["Accept", "Content-Type"],
