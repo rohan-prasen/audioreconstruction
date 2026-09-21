@@ -5,6 +5,7 @@ import datetime as dt
 import gc
 import logging
 import os
+import re
 import sys
 import tempfile
 import time
@@ -15,9 +16,19 @@ import soundfile as sf
 import torch
 from audio_io import copy_metadata, load_audio_sf, write_flac
 from batcher import InferenceBatcher
-from fastapi import FastAPI, HTTPException, Request, UploadFile
+from blob_storage import (
+    BlobStorageError,
+    blob_size,
+    delete_blob,
+    download_to_path,
+    make_download_sas,
+    make_upload_sas,
+    new_blob_name,
+    upload_flac,
+)
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -57,20 +68,23 @@ MODEL_CHECKPOINT_DIR = Path("/checkpoints/best/")
 TEMP_DIR = Path(tempfile.gettempdir()) / "audioreconstruction"
 INFERENCE_TIMEOUT = 180
 
+# Exactly what new_blob_name() produces. Nothing else is accepted.
+_BLOB_NAME_RE = re.compile(r"^[0-9a-f]{32}\.mp3$")
+_UNSAFE_STEM_RE = re.compile(r'[^\w\-. ]')
+
+
+class ServeRequest(BaseModel):
+    blobName: str
+    filename: str | None = None
+
 
 def _preprocess_audio(
-    content: bytes,
+    input_path: Path,
     cfg,
-) -> tuple[list[tuple[torch.Tensor, int]], Path]:
-    TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=str(TEMP_DIR)) as tmp:
-        tmp.write(content)
-    input_path = Path(tmp.name)
-
+) -> list[tuple[torch.Tensor, int]]:
     info = sf.info(str(input_path))
     duration = info.frames / info.samplerate
     if duration > 360:
-        input_path.unlink(missing_ok=True)
         raise ValueError("Audio exceeds 6 minute limit.")
 
     waveform = load_audio_sf(
@@ -97,21 +111,18 @@ def _preprocess_audio(
             segments.append((chunk, min(seg_len, length - start)))
 
     del waveform
-    return segments, input_path
+    return segments
 
 
-def _encode_flac(result: torch.Tensor, sample_rate: int, src_mp3: Path | None = None) -> bytes:
-    TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(suffix=".flac", delete=False, dir=str(TEMP_DIR)) as tmp:
-        pass
-    output_path = Path(tmp.name)
-    try:
-        write_flac(result, output_path, sample_rate)
-        if src_mp3 is not None:
-            copy_metadata(src_mp3, output_path)
-        return output_path.read_bytes()
-    finally:
-        output_path.unlink(missing_ok=True)
+def _encode_flac(
+    result: torch.Tensor,
+    sample_rate: int,
+    output_path: Path,
+    src_mp3: Path | None = None,
+) -> None:
+    write_flac(result, output_path, sample_rate)
+    if src_mp3 is not None:
+        copy_metadata(src_mp3, output_path)
 
 
 def _get_model_cfg(generator):
@@ -203,37 +214,44 @@ async def health_check(request: Request):
 
 @app.post("/model-serve")
 @limiter.limit("40/minute")
-async def model_serve(request: Request, file: UploadFile):
+async def model_serve(request: Request, body: ServeRequest):
     if not app.state.ready:
         raise HTTPException(503, "Model not loaded.")
 
-    if (
-        file.content_type
-        and "audio" not in file.content_type
-        and "octet-stream" not in file.content_type
-    ):
-        raise HTTPException(415, "Expected an audio file.")
-
-    content = await file.read()
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            413, f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit."
-        )
+    blob_name = body.blobName
+    if not _BLOB_NAME_RE.match(blob_name):
+        raise HTTPException(400, "Invalid blob name.")
 
     loop = asyncio.get_running_loop()
     batcher: InferenceBatcher = app.state.batcher
     cfg = app.state.cfg
 
-    mp3_path: Path | None = None
+    # Size is checked against Azure before any GPU work happens.
     try:
-        segments, mp3_path = await loop.run_in_executor(
-            None, _preprocess_audio, content, cfg
+        size = await loop.run_in_executor(None, blob_size, blob_name)
+    except BlobStorageError:
+        raise HTTPException(404, "Upload not found or expired.")
+
+    if size > MAX_UPLOAD_BYTES:
+        await loop.run_in_executor(None, delete_blob, blob_name)
+        raise HTTPException(
+            413, f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit."
         )
-        del content
-    except ValueError as exc:
-        raise HTTPException(413, str(exc))
+
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    mp3_path = TEMP_DIR / blob_name
+    flac_path: Path | None = None
 
     try:
+        await loop.run_in_executor(None, download_to_path, blob_name, mp3_path)
+
+        try:
+            segments = await loop.run_in_executor(
+                None, _preprocess_audio, mp3_path, cfg
+            )
+        except ValueError as exc:
+            raise HTTPException(413, str(exc))
+
         futures = [batcher.submit(seg) for seg, _ in segments]
         results = await asyncio.wait_for(
             asyncio.gather(*futures),
@@ -252,26 +270,51 @@ async def model_serve(request: Request, file: UploadFile):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-        flac_bytes = await loop.run_in_executor(
-            None, _encode_flac, combined, cfg.sample_rate, mp3_path
+        out_blob = new_blob_name(".flac")
+        flac_path = TEMP_DIR / out_blob
+        await loop.run_in_executor(
+            None, _encode_flac, combined, cfg.sample_rate, flac_path, mp3_path
         )
         del combined
 
-        stem = Path(file.filename).stem if file.filename else "output"
+        await loop.run_in_executor(None, upload_flac, flac_path, out_blob)
 
-        return StreamingResponse(
-            iter([flac_bytes]),
-            media_type="audio/flac",
-            headers={
-                "Content-Disposition": f'attachment; filename="{stem}_reconstructed.flac"'
-            },
-        )
+        stem = Path(body.filename).stem if body.filename else "output"
+        stem = _UNSAFE_STEM_RE.sub("_", stem)[:100] or "output"
+        download_name = f"{stem}_reconstructed.flac"
+
+        return {
+            "downloadUrl": make_download_sas(out_blob, download_name),
+            "filename": download_name,
+            "size": flac_path.stat().st_size,
+        }
+    except HTTPException:
+        raise
     except asyncio.TimeoutError:
         raise HTTPException(504, "Inference timed out — file may be too big.")
+    except BlobStorageError as exc:
+        logger.error("Storage failure: %s", exc)
+        raise HTTPException(502, "Storage unavailable.")
     except Exception:
         logger.exception("Inference failed")
         raise HTTPException(500, "Inference failed.")
     finally:
-        if mp3_path is not None:
-            mp3_path.unlink(missing_ok=True)
+        mp3_path.unlink(missing_ok=True)
+        if flac_path is not None:
+            flac_path.unlink(missing_ok=True)
+        await loop.run_in_executor(None, delete_blob, blob_name)
         gc.collect()
+
+
+@app.post("/upload-url")
+@limiter.limit("20/minute")
+async def upload_url(request: Request):
+    """Hand the browser a short-lived, write-only key for one new blob."""
+    blob_name = new_blob_name(".mp3")
+    try:
+        upload_url = make_upload_sas(blob_name)
+    except BlobStorageError as exc:
+        logger.error("Could not mint upload SAS: %s", exc)
+        raise HTTPException(503, "Storage unavailable.")
+
+    return {"uploadUrl": upload_url, "blobName": blob_name}

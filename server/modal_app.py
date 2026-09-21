@@ -18,6 +18,7 @@ image = (
         "torch",
         "torchaudio",
         "mutagen",
+        "azure-storage-blob",
     )
     .add_local_dir(
         _SERVER_DIR,
@@ -44,6 +45,7 @@ app = modal.App("audioreconstruction")
     min_containers=0,
     max_containers=2,
     memory=8192,
+    secrets=[modal.Secret.from_name("azure-blob")],
 )
 @modal.concurrent(max_inputs=16)
 @modal.asgi_app()

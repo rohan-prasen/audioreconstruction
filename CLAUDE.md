@@ -93,14 +93,27 @@ Each checkpoint directory contains:
 
 ### Two inference servers — `backend/` vs `server/`
 
-Both expose the same three routes (`GET /`, `GET /health-check`, `POST /model-serve`) but differ in maturity and deployment target:
+`backend/` exposes three routes (`GET /`, `GET /health-check`, `POST /model-serve` as multipart upload). `server/` exposes four, and its `/model-serve` takes a blob name rather than a file — see **Pre-signed uploads** below. They differ in maturity and deployment target:
 
 - **`backend/main.py`** — simple local dev server. Imports `model/` directly (`from model.evaluate import load_generator`), processes one request at a time with no batching or rate limiting, permissive CORS (`*`). Checkpoint path from `CHECKPOINT_DIR` env var (see `backend/.env.example`), default `model/checkpoints/best/`.
 - **`server/`** — production server deployed to Modal.com. Has its own **self-contained copy** of the inference-only model code (`server/model/{config,evaluate,generator}.py` — no training/dataset/loss modules) because `modal_app.py` packages `server/` as an isolated container image via `add_local_dir`. Adds:
   - `batcher.py` — `InferenceBatcher` dynamically batches concurrent segment requests (up to `MAX_BATCH_SIZE=8`, `MAX_WAIT_S=0.25`) on a dedicated single-thread executor so GPU inference isn't serialized per-request.
   - `audio_io.py` — soundfile-based audio load/write + ID3→Vorbis metadata copying (FLAC tags carried over from the source MP3).
   - `modal_app.py` — defines the Modal `App`/image (T4 GPU, `min_containers=0`, `max_containers=2`, `scaledown_window=60`) and wraps `app.py`'s FastAPI instance via `@modal.asgi_app()`.
-  - Rate limiting via `slowapi` (`10/minute` on GET routes, `40/minute` on `/model-serve`), strict CORS locked to `https://audioreconstruction.vercel.app`, IST-formatted structured logging.
+  - Rate limiting via `slowapi` (`10/minute` on GET routes, `20/minute` on `/upload-url`, `40/minute` on `/model-serve`), strict CORS locked to `https://audioreconstruction.vercel.app`, IST-formatted structured logging.
+  - `blob_storage.py` — Azure Blob Storage: mints SAS URLs and moves blobs. Imports nothing from FastAPI and raises `BlobStorageError`; `app.py` translates that to HTTP.
+
+#### Pre-signed uploads (`server/` only)
+
+Audio never passes through the GPU container. Three steps:
+
+1. `POST /upload-url` → `{uploadUrl, blobName}`. A **service SAS** scoped to one blob, `create`+`write` only, 15 min.
+2. The browser `PUT`s the MP3 straight to Azure (requires the `x-ms-blob-type: BlockBlob` header).
+3. `POST /model-serve` with `{blobName, filename}` → `{downloadUrl, filename, size}`. A read-only SAS, 1 hour, carrying `content_disposition` so it saves as `<stem>_reconstructed.flac`.
+
+`blobName` is server-generated (`uuid4().hex + ".mp3"`) and re-validated against `_BLOB_NAME_RE` on arrival — it is used as a temp-file path, so an unvalidated value would be a traversal bug. Size is checked via `blob_size()` before any GPU work; the input blob is deleted in `finally`. Output blobs are left to an Azure lifecycle rule.
+
+Config comes from `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`, `AZURE_UPLOAD_CONTAINER`, `AZURE_OUTPUT_CONTAINER` (and `AZURE_BLOB_ENDPOINT` to point at Azurite locally), supplied on Modal via the `azure-blob` secret. **The storage account needs a CORS rule** allowing `PUT`/`GET` from the frontend origin, or the browser's direct upload is blocked.
 
 When changing inference behavior that should apply in production, edit `server/` — `backend/` is dev-only and not deployed.
 
@@ -122,7 +135,7 @@ A **separate, self-contained delivery path** from the FastAPI servers: it runs t
 
 ### Frontend (`frontend/`)
 
-React 19 + Vite 8 + Tailwind CSS 4 — a single-file app in `src/App.jsx` that uploads MP3s to `POST /model-serve` and downloads the reconstructed FLAC. See `frontend/CLAUDE.md` for the detailed state model, retry/back-off logic, and styling approach; it proxies `/api/*` to the backend in dev via `vite.config.js`.
+React 19 + Vite 8 + Tailwind CSS 4 — a single-file app in `src/App.jsx` that uploads MP3s directly to Azure Blob Storage via a pre-signed SAS URL, then polls `POST /model-serve` and links to the reconstructed FLAC. See `frontend/CLAUDE.md` for the detailed state model, retry/back-off logic, and styling approach; it proxies `/api/*` to the backend in dev via `vite.config.js`.
 
 ### Audio similarity evaluation (`test/`)
 

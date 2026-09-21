@@ -33,7 +33,9 @@ The entire UI lives in a single React component tree in `src/App.jsx`. There is 
 
 ### Backend Integration
 
-- **Reconstruct:** `POST /model-serve` (multipart/form-data) — returns a binary FLAC blob
+- **Start upload:** `POST /upload-url` — returns `{uploadUrl, blobName}` (a write-only Azure SAS, 15 min)
+- **Upload:** `PUT <uploadUrl>` straight to Azure Blob Storage, header `x-ms-blob-type: BlockBlob`
+- **Reconstruct:** `POST /model-serve` (JSON `{blobName, filename}`) — returns `{downloadUrl, filename, size}`
 - **Health:** `GET /health-check` — polled every 30 seconds
 - Implements exponential back-off with jitter (up to 5 retries) on 429/503/504
 

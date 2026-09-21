@@ -43,6 +43,10 @@ function validateFile(file) {
     return "";
 }
 
+function releaseResultUrl(url) {
+    if (url && url.startsWith("blob:")) URL.revokeObjectURL(url);
+}
+
 function getAudioDuration(file) {
     return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(file);
@@ -127,14 +131,18 @@ function QueueCard({ items, jobMap, onRemove, onCancel, onDownload }) {
                     const key = fileKey(item.file);
                     const job = jobMap[key];
                     const status = job?.status;
-                    const isWorking = status === "processing" || status === "waiting";
+                    const isWorking =
+                        status === "processing" ||
+                        status === "waiting" ||
+                        status === "uploading";
                     const isDone = status === "done";
                     const isError = status === "error";
 
                     const displayName = isDone && job.result?.name ? job.result.name : item.file.name;
                     const displaySize = isDone && job.result?.size ? formatSize(job.result.size) : formatSize(item.file.size);
 
-                    const statusLabel = status === "processing" ? "Processing…"
+                    const statusLabel = status === "uploading" ? "Uploading…"
+                        : status === "processing" ? "Processing…"
                         : status === "waiting" ? "Retrying…"
                         : status === "done" ? "Done"
                         : status === "error" ? "Failed"
@@ -146,7 +154,11 @@ function QueueCard({ items, jobMap, onRemove, onCancel, onDownload }) {
                         "queue-row",
                         isDone ? "done" : "",
                         isError ? "failed" : "",
-                        isWorking ? (status === "waiting" ? "uploading" : "processing") : "",
+                        isWorking
+                            ? status === "processing"
+                                ? "processing"
+                                : "uploading"
+                            : "",
                     ].filter(Boolean).join(" ");
 
                     return (
@@ -247,7 +259,9 @@ export default function App() {
     const cancelledRef = useRef(false);
     const themeMenuRef = useRef(null);
 
-    jobMapRef.current = jobMap;
+    useEffect(() => {
+        jobMapRef.current = jobMap;
+    });
 
     const activeTheme = themeChoice === "system" ? (systemDark ? "dark" : "light") : themeChoice;
 
@@ -255,7 +269,7 @@ export default function App() {
 
     const processing = files.some((item) => {
         const s = jobMap[fileKey(item.file)]?.status;
-        return s === "processing" || s === "waiting";
+        return s === "processing" || s === "waiting" || s === "uploading";
     });
     const doneCount = files.filter(
         (item) => jobMap[fileKey(item.file)]?.status === "done",
@@ -338,7 +352,9 @@ export default function App() {
         }
     }, []);
 
-    addFilesRef.current = addFiles;
+    useEffect(() => {
+        addFilesRef.current = addFiles;
+    });
 
     function removeFile(index) {
         setFiles((prev) => {
@@ -351,7 +367,7 @@ export default function App() {
             setJobMap((prevMap) => {
                 const next = { ...prevMap };
                 if (next[key]?.result?.url)
-                    URL.revokeObjectURL(next[key].result.url);
+                    releaseResultUrl(next[key].result.url);
                 delete next[key];
                 return next;
             });
@@ -369,7 +385,7 @@ export default function App() {
 
     function clearQueue() {
         Object.values(jobMapRef.current).forEach((job) => {
-            if (job.result?.url) URL.revokeObjectURL(job.result.url);
+            if (job.result?.url) releaseResultUrl(job.result.url);
         });
         setFiles([]);
         setJobMap({});
@@ -382,36 +398,75 @@ export default function App() {
         const controller = new AbortController();
         abortControllersRef.current[key] = controller;
 
-        setJobMap((prev) => ({
-            ...prev,
-            [key]: { status: "processing" },
-        }));
+        const setStatus = (value) =>
+            setJobMap((prev) => ({ ...prev, [key]: value }));
+        const dropKey = () =>
+            setJobMap((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            });
+
+        // Steps 1-2: ask our API for a write-only key, then send the bytes
+        // straight to Azure. The GPU container never sees this traffic.
+        setStatus({ status: "uploading" });
+
+        let blobName;
+        try {
+            const sasRes = await fetch(`${API_BASE}/upload-url`, {
+                method: "POST",
+                signal: controller.signal,
+            });
+            if (!sasRes.ok) {
+                throw new Error(`Could not start upload (${sasRes.status})`);
+            }
+            const sas = await sasRes.json();
+            blobName = sas.blobName;
+
+            const putRes = await fetch(sas.uploadUrl, {
+                method: "PUT",
+                body: file,
+                headers: {
+                    "x-ms-blob-type": "BlockBlob",
+                    "Content-Type": file.type || "audio/mpeg",
+                },
+                signal: controller.signal,
+            });
+            if (!putRes.ok) {
+                throw new Error(`Upload failed (${putRes.status})`);
+            }
+        } catch (err) {
+            delete abortControllersRef.current[key];
+            if (err.name === "AbortError") dropKey();
+            else
+                setStatus({
+                    status: "error",
+                    error: err.message || "Upload failed",
+                });
+            return;
+        }
+
+        // Step 3: hand the blob name to the GPU. Only this step retries —
+        // the file is already uploaded, no point sending it twice.
+        setStatus({ status: "processing" });
 
         let succeeded = false;
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             if (controller.signal.aborted || cancelledRef.current) break;
             try {
-                const form = new FormData();
-                form.append("file", file);
                 const res = await fetch(`${API_BASE}/model-serve`, {
                     method: "POST",
-                    body: form,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ blobName, filename: file.name }),
                     signal: controller.signal,
                 });
 
                 const retryable =
                     res.status === 429 || res.status === 503 || res.status === 504;
                 if (retryable && attempt < MAX_RETRIES) {
-                    const retryAfter =
-                        res.headers.get("retry-after");
-                    const delay = getRetryDelay(
-                        attempt,
-                        retryAfter,
-                    );
-                    setJobMap((prev) => ({
-                        ...prev,
-                        [key]: { status: "waiting" },
-                    }));
+                    const retryAfter = res.headers.get("retry-after");
+                    const delay = getRetryDelay(attempt, retryAfter);
+                    setStatus({ status: "waiting" });
                     await new Promise((r) => setTimeout(r, delay));
                     continue;
                 }
@@ -419,56 +474,31 @@ export default function App() {
                 if (!res.ok) {
                     const body = await res.json().catch(() => null);
                     throw new Error(
-                        body?.detail ??
-                            `Server error (${res.status})`,
+                        body?.detail ?? `Server error (${res.status})`,
                     );
                 }
 
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const disposition =
-                    res.headers.get("content-disposition") ?? "";
-                const nameMatch =
-                    disposition.match(/filename="?([^"]+)"?/);
-                const outputName =
-                    nameMatch?.[1] ??
-                    file.name.replace(
-                        /\.\w+$/,
-                        "_reconstructed.flac",
-                    );
-
-                setJobMap((prev) => ({
-                    ...prev,
-                    [key]: {
-                        status: "done",
-                        result: {
-                            url,
-                            name: outputName,
-                            size: blob.size,
-                        },
+                const data = await res.json();
+                setStatus({
+                    status: "done",
+                    result: {
+                        url: data.downloadUrl,
+                        name: data.filename,
+                        size: data.size,
                     },
-                }));
+                });
                 succeeded = true;
                 break;
             } catch (err) {
                 if (err.name === "AbortError") {
-                    setJobMap((prev) => {
-                        const next = { ...prev };
-                        delete next[key];
-                        return next;
-                    });
+                    dropKey();
                     break;
                 }
                 if (attempt < MAX_RETRIES) continue;
-                setJobMap((prev) => ({
-                    ...prev,
-                    [key]: {
-                        status: "error",
-                        error:
-                            err.message ||
-                            "Reconstruction failed",
-                    },
-                }));
+                setStatus({
+                    status: "error",
+                    error: err.message || "Reconstruction failed",
+                });
             }
         }
 
@@ -479,13 +509,10 @@ export default function App() {
             !controller.signal.aborted &&
             jobMapRef.current[key]?.status === "waiting"
         ) {
-            setJobMap((prev) => ({
-                ...prev,
-                [key]: {
-                    status: "error",
-                    error: "Server busy — retries exhausted. Try again later.",
-                },
-            }));
+            setStatus({
+                status: "error",
+                error: "Server busy — retries exhausted. Try again later.",
+            });
         }
     }
 
@@ -604,7 +631,7 @@ export default function App() {
                 c.abort(),
             );
             Object.values(jobMapRef.current).forEach((job) => {
-                if (job.result?.url) URL.revokeObjectURL(job.result.url);
+                if (job.result?.url) releaseResultUrl(job.result.url);
             });
         };
     }, []);

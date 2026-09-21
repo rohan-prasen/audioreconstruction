@@ -8,3 +8,4 @@ safetensors
 torch
 torchaudio
 modal
+azure-storage-blob
