@@ -16,7 +16,7 @@ bun preview           # preview production build
 
 `vite.config.js` proxies all `/api/*` requests to the backend, stripping the `/api` prefix before forwarding. The backend URL defaults to `http://localhost:8000` and can be overridden with `VITE_BACKEND_URL` in a `.env` file.
 
-In `App.jsx`, `API_BASE` is set from `import.meta.env.VITE_BACKEND_URL || ""`, so fetch calls to `/model-serve` and `/health-check` go through the Vite proxy in dev and hit the backend directly in production (where `VITE_BACKEND_URL` is set to the Modal-deployed URL).
+In `App.jsx`, `API_BASE` is set from `import.meta.env.VITE_BACKEND_URL || ""`, so fetch calls to `/upload-url`, `/model-serve` and `/health-check` go through the Vite proxy in dev and hit the backend directly in production (where `VITE_BACKEND_URL` is set to the Modal-deployed URL).
 
 ## Architecture
 
@@ -34,7 +34,15 @@ The entire frontend is a single React component tree in `src/App.jsx` (~695 line
 
 ### Backend integration
 
-`reconstructAll()` iterates the pending queue sequentially (one file at a time), posting each to `POST /model-serve` as `multipart/form-data`. It implements exponential back-off with jitter (up to 5 retries) on 429/503/504 responses. The response is a binary FLAC blob; a temporary object URL is created for the download link and revoked on queue clear or component unmount.
+`reconstructAll()` iterates the pending queue sequentially (one file at a time). Each file goes through three steps in `processOneFile()`:
+
+1. `POST /upload-url` — gets a short-lived Azure SAS URL (status `uploading`)
+2. `PUT` the file straight to Azure Blob Storage, header `x-ms-blob-type: BlockBlob` — this never touches the GPU container
+3. `POST /model-serve` with `{blobName, filename}` (status `processing`)
+
+Only step 3 retries — exponential back-off with jitter, up to 5 attempts on 429/503/504. The file is already uploaded by then, so a retry re-sends only the blob name.
+
+The response is JSON carrying `downloadUrl`, a read-only SAS that the download link points at directly. It is a real URL, not an object URL, so `releaseResultUrl()` guards `URL.revokeObjectURL` with a `blob:` prefix check.
 
 Health checks poll `GET /health-check` every 30 seconds; the Start button is disabled when `serverStatus === "offline"`.
 

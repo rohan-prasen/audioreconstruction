@@ -1,3 +1,16 @@
+"""Local dev server — LEGACY UPLOAD CONTRACT.
+
+This still takes a multipart file upload on POST /model-serve and streams
+the FLAC back. The deployed server (server/app.py) no longer does: it hands
+out an Azure SAS URL from POST /upload-url, the browser uploads straight to
+blob storage, and /model-serve takes {blobName, filename} and returns a
+download URL.
+
+So the current frontend does NOT work against this server. Point the Vite
+proxy at server/app.py instead, or update this file to match. Production
+behaviour lives in server/ - see CLAUDE.md.
+"""
+
 from __future__ import annotations
 
 import logging
