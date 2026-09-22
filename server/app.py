@@ -187,7 +187,7 @@ async def lifespan(app: FastAPI):
     logger.info("===== Shutdown =====")
 
 
-app = FastAPI(title="Audio Reconstruction", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Audio Reconstruction", version="1.3.0", lifespan=lifespan)
 
 limiter = Limiter(key_func=get_remote_address)
 
