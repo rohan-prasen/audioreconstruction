@@ -1,6 +1,6 @@
 [project]
 name = "audioreconstruction"
-version = "1.2.1.dev1"
+version = "1.2.1"
 description = "This is the python application that created and serves audioreconstruction"
 license = "MIT"
 readme = "README.md"
