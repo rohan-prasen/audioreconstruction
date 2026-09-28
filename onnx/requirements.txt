@@ -1,6 +1,6 @@
 onnxruntime==1.20.1
 soundfile>=0.13.1
 numpy>=1.26
-scipy>=1.11
+scipy>=1.16
 mutagen>=1.47
 pyinstaller>=6.21.0

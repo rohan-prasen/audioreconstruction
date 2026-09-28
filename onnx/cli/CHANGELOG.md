@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0
+
+**Fixed macOS 26/27 native runtime crash.** On macOS 26/27 (Tahoe / "Golden Gate"), the
+runtime self-test failed to load bundled SciPy Fortran extensions
+(`dlopen ... _spropack ...: section '__DATA/__thread_bss' has a zero-fill section type, but
+offset field is not zero`). The cause is macOS 26/27's stricter dyld validation rejecting
+SciPy ≤1.15.x binaries; older macOS tolerated them, which is why some machines were
+unaffected. The native binary is now built on **Python 3.12 with SciPy ≥1.16**, whose
+extensions load cleanly on current macOS. (The 1.2.2 `scipy.signal` narrowing alone could not
+fix this, because Python 3.10 caps SciPy at the broken 1.15.x.)
+
 ## 1.2.2
 
 **Fixed macOS runtime self-tests.** The native bundle now includes only the
