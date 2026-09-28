@@ -49,12 +49,6 @@ def banner(version: str) -> None:
     console.print()
 
 
-def section(label: str) -> None:
-    """A small left-aligned section heading."""
-    console.print(Text.assemble(("● ", GREEN), (label, f"bold {WHITE}")))
-    console.print()
-
-
 def rich_reporter() -> Callable[[str], None]:
     """Return a ``report(str)`` callable that colorizes launcher status lines."""
 
