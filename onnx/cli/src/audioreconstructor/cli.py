@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import shutil
+import ssl
 import stat
 import subprocess
 import tempfile
@@ -19,6 +20,8 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
+
+import certifi
 
 from . import __version__
 
@@ -34,6 +37,11 @@ DOWNLOAD_RETRIES = 3  # total attempts per asset on transient network errors
 DOWNLOAD_BACKOFF_SECONDS = 1.0  # base backoff, multiplied by attempt number
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 VERSION_DIR_RE = re.compile(r"^\d+(?:\.\d+)+(?:[a-zA-Z0-9._-]+)?$")
+
+# A certifi-backed SSL context keeps HTTPS verification working on interpreters that lack
+# a usable system trust store (e.g. python.org builds on macOS), the same CA set pip uses.
+# Platform-independent: certifi ships the CA bundle, so no OS-specific configuration.
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 
 class CliError(Exception):
@@ -215,7 +223,7 @@ def download(url: str, destination: Path, expected: Artifact | None = None) -> N
         digest = hashlib.sha256()
         size = 0
         try:
-            with urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response, destination.open("wb") as handle:
+            with urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS, context=_SSL_CONTEXT) as response, destination.open("wb") as handle:
                 while data := response.read(CHUNK_SIZE):
                     handle.write(data)
                     digest.update(data)
@@ -351,8 +359,15 @@ def _self_test(paths: Mapping[str, Path]) -> tuple[bool, str]:
         return False, f"timed out after {SELF_TEST_TIMEOUT_SECONDS} seconds"
     if result.returncode == 0 and "SELF-TEST PASS" in result.stdout:
         return True, "passed"
-    detail = (result.stderr or result.stdout).strip().splitlines()
-    return False, detail[-1] if detail else f"exited with code {result.returncode}"
+    lines = [line for line in (result.stderr or result.stdout).splitlines() if line.strip()]
+    # PyInstaller's frozen bootloader appends a generic "Failed to execute script ...
+    # unhandled exception!" banner as the final line, burying the real Python traceback
+    # printed just above it. Drop that banner so the actual error reaches the report.
+    if lines and "Failed to execute script" in lines[-1]:
+        lines = lines[:-1]
+    if not lines:
+        return False, f"exited with code {result.returncode}"
+    return False, "\n".join(lines[-12:])
 
 
 def doctor(

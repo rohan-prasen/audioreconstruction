@@ -1,10 +1,24 @@
 # Changelog
 
+## 1.2.1
+
+**Reliable HTTPS downloads.** `setup` now verifies release downloads against the bundled
+certifi CA store instead of the interpreter's system trust store. This fixes
+`CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate` on macOS and other
+environments that lack a configured CA store — the platform-independent trust set pip uses.
+
+**Clearer self-test failures.** When `doctor`'s runtime self-test fails, it now surfaces the
+native binary's real error output instead of PyInstaller's generic "Failed to execute
+script" banner, so the actual cause is visible.
+
+**Fixes.** The reported package version is now derived from installed metadata (it can no
+longer drift from the release version), and unused launcher code was removed.
+
 ## 1.2.0
 
 **macOS support.** The CLI now runs on macOS, on both Apple Silicon (arm64) and Intel
 (x86_64). `setup` downloads the matching native binary
-(`audioreconstructor-macos-arm64` / `audioreconstructor-macos-x86_64`) and caches it
+(`audioreconstructor-macos-amd64` / `audioreconstructor-macos-intel`) and caches it
 under `~/Library/Caches/audioreconstructor/<version>`. When Python runs under Rosetta 2
 on an Apple Silicon machine, the CLI detects the translation and still installs the
 native arm64 binary.

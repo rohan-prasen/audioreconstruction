@@ -4,17 +4,20 @@ import hashlib
 import json
 import os
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from audioreconstructor import app, batch, cli
 from click.testing import CliRunner
+
+from audioreconstructor import app, batch, cli
 
 TARGET = cli.Target("Linux", "amd64", "audioreconstructor-linux-amd64", "audioreconstructor")
 
@@ -245,7 +248,7 @@ class CliTests(unittest.TestCase):
         payload = b"payload bytes"
         calls = {"n": 0}
 
-        def flaky_urlopen(_request, timeout=None):
+        def flaky_urlopen(_request, timeout=None, context=None):
             calls["n"] += 1
             if calls["n"] < cli.DOWNLOAD_RETRIES:
                 raise cli.URLError("temporary network error")
@@ -260,7 +263,7 @@ class CliTests(unittest.TestCase):
     def test_download_does_not_retry_client_errors(self) -> None:
         dest = self.root / "asset.bin"
 
-        def not_found(_request, timeout=None):
+        def not_found(_request, timeout=None, context=None):
             raise cli.HTTPError("https://example/asset", 404, "Not Found", {}, None)
 
         with (
@@ -271,6 +274,38 @@ class CliTests(unittest.TestCase):
             cli.download("https://example/asset", dest)
 
         slept.assert_not_called()
+
+    def test_download_uses_certifi_ssl_context(self) -> None:
+        dest = self.root / "asset.bin"
+        captured: dict[str, object] = {}
+
+        def capture_urlopen(_request, timeout=None, context=None):
+            captured["context"] = context
+            return _FakeResponse(b"payload")
+
+        with mock.patch.object(cli, "urlopen", side_effect=capture_urlopen):
+            cli.download("https://example/asset", dest)
+
+        self.assertIsInstance(captured["context"], ssl.SSLContext)
+
+    def test_self_test_surfaces_real_traceback(self) -> None:
+        paths = {"binary": Path("bin"), "model": Path("model"), "config": Path("config")}
+        result = types.SimpleNamespace(
+            returncode=1,
+            stdout="",
+            stderr=(
+                "Traceback (most recent call last):\n"
+                '  File "inference.py", line 10, in <module>\n'
+                "RuntimeError: onnxruntime provider unavailable\n"
+                "[PYI-98512:ERROR] Failed to execute script 'inference' due to unhandled exception!"
+            ),
+        )
+        with mock.patch.object(cli.subprocess, "run", return_value=result):
+            passed, detail = cli._self_test(paths)
+
+        self.assertFalse(passed)
+        self.assertIn("RuntimeError: onnxruntime provider unavailable", detail)
+        self.assertNotIn("Failed to execute script", detail)
 
     def test_platform_and_cache_resolution(self) -> None:
         linux = cli.get_cache_root("Linux", {"XDG_CACHE_HOME": "/tmp/xdg"}, Path("/home/test"))
