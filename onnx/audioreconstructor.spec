@@ -8,7 +8,10 @@ tmp_ret = collect_all('soundfile')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('onnxruntime')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('scipy')
+# Inference only uses scipy.signal.resample_poly. Collecting all of SciPy also
+# bundles unrelated sparse/Fortran extensions such as _spropack, whose macOS
+# arm64 Mach-O metadata is rejected by dyld on supported macOS versions.
+tmp_ret = collect_all('scipy.signal')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 

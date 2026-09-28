@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2
+
+**Fixed macOS runtime self-tests.** The native bundle now includes only the
+`scipy.signal` modules used for resampling instead of unrelated SciPy sparse
+extensions. This avoids a malformed `_spropack` Mach-O library that macOS
+rejects on Apple Silicon.
+
 ## 1.2.1
 
 **Reliable HTTPS downloads.** `setup` now verifies release downloads against the bundled
