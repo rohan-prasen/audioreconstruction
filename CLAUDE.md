@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GAN-based audio super-resolution: reconstructs high-fidelity FLAC from lossy MP3 (128/256/320 kbps). Uses a 1D U-Net generator (~28M params) with a multi-scale discriminator (~25M params), trained with mixed-precision on CUDA. Two FastAPI servers wrap the trained generator for inference — a local dev server (`backend/`) and a production server (`server/`) deployed to Modal.com GPU containers.
+GAN-based audio super-resolution: reconstructs high-fidelity FLAC from lossy MP3 (128/256/320 kbps). Uses a 1D U-Net generator (~28M params) with a multi-scale discriminator (~25M params), trained with mixed-precision on CUDA. Two FastAPI servers wrap the trained generator for inference — a local dev server (`backend/`) and a production server (`server/`) deployed to Modal.com GPU containers. A third delivery path ships the model as a torch-free ONNX CLI (`onnx/cli/`, the `audioreconstructor` PyPI package).
+
+For product intent and the target user, see `PRODUCT.md`; for the design system (color tokens, typography), see `DESIGN.md`. Neither is derivable from code. `AGENTS.md` is a byte-identical mirror of this file — keep the two in sync.
 
 ## Commands
 
@@ -158,7 +160,7 @@ data/
 
 ## Key Constraints
 
-- Python 3.10 (pinned in `.python-version`), managed by `uv`
+- Python 3.12 (pinned in `.python-version`), managed by `uv`; root project requires `>=3.10`, the published `audioreconstructor` CLI supports 3.10–3.13
 - CUDA required for training (mixed-precision assumes CUDA)
 - Evaluation/inference falls back to CPU but is slow
 - FFmpeg must be installed for data preparation
