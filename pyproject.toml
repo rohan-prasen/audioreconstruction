@@ -42,4 +42,5 @@ dev = [
     "audioreconstructor>=1.2.0",
     "redis>=8.1.0",
     "pytest>=9.1.1",
+    "pre-commit>=4.6.2",
 ]
