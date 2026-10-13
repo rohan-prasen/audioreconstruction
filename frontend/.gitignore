@@ -26,3 +26,8 @@ dist-ssr
 .env.*
 !.env.example
 design.html
+
+.claude/
+.claude-flow/
+ruvector.db
+.swarm/

@@ -12,14 +12,24 @@
     --font-body:
         -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
         sans-serif;
+    --font-label: "Optima", "Avenir Next", "Gill Sans", var(--font-body);
 
     --success: oklch(67% 0.13 72);
-    --warning: #a84a00;
-    --danger: #d2161c;
-    --radius-lg: 28px;
+    --warning: oklch(50% 0.12 55);
+    --danger: oklch(52% 0.2 25);
+    --radius-sm: 14px;
     --radius-md: 18px;
+    --radius-lg: 24px;
     --shadow-soft: 0 26px 90px rgb(82 58 30 / 0.18);
     --glass: color-mix(in oklch, var(--surface) 74%, transparent);
+
+    --duration-fast: 150ms;
+    --duration-normal: 240ms;
+    --duration-slow: 320ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
     color-scheme: light;
 }
 
@@ -30,8 +40,8 @@
     --muted: oklch(74% 0.026 76);
     --border: oklch(34% 0.032 62);
     --accent: oklch(70% 0.13 68);
-    --warning: #d97706;
-    --danger: #f3413b;
+    --warning: oklch(68% 0.15 65);
+    --danger: oklch(64% 0.19 27);
     --glass: color-mix(in oklch, var(--surface) 58%, transparent);
     --shadow-soft: 0 28px 90px rgb(0 0 0 / 0.34);
     color-scheme: dark;
@@ -353,7 +363,7 @@ a {
     pointer-events: none;
     transition:
         opacity 180ms ease,
-        transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform 180ms var(--ease-out);
 }
 
 .theme-menu.open {
@@ -369,11 +379,10 @@ a {
     width: 100%;
     min-height: 46px;
     padding: 0 14px;
-    border-radius: 14px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--muted);
-    font-family:
-        "Optima", "Avenir Next", "Gill Sans", var(--font-body);
+    font-family: var(--font-label);
     font-size: 14.5px;
     font-weight: 400;
     text-align: left;
@@ -415,10 +424,6 @@ a {
     flex: 0 0 auto;
 }
 
-.theme-mobile-icon {
-    display: none;
-}
-
 .github-link {
     position: relative;
     display: inline-flex;
@@ -435,8 +440,7 @@ a {
         var(--surface) 36%,
         transparent
     );
-    font-family:
-        "Optima", "Avenir Next", "Gill Sans", var(--font-body);
+    font-family: var(--font-label);
     font-size: 14px;
     font-weight: 400;
     letter-spacing: 0.01em;
@@ -684,6 +688,30 @@ h1 {
     gap: 10px;
 }
 
+/* First-load entrance — staggered fade-up, seen once per visit */
+.headline-wrap,
+.dropzone-shell {
+    transition:
+        opacity var(--duration-slow) var(--ease-out),
+        transform var(--duration-slow) var(--ease-out);
+}
+
+.dropzone-shell {
+    transition-delay: 90ms;
+}
+
+@starting-style {
+    .headline-wrap {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    .dropzone-shell {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+}
+
 .dropzone {
     position: relative;
     overflow: hidden;
@@ -693,7 +721,7 @@ h1 {
     padding: clamp(18px, 4vw, 24px);
     border: 1px solid
         color-mix(in oklch, var(--border) 92%, var(--fg) 4%);
-    border-radius: 24px;
+    border-radius: var(--radius-lg);
     background:
         linear-gradient(
             180deg,
@@ -706,11 +734,9 @@ h1 {
         inset 0 1px 0 rgb(255 255 255 / 0.44);
     backdrop-filter: blur(22px) saturate(1.1);
     text-align: left;
-    font-family:
-        Optima, "Avenir Next", "Gill Sans", "Segoe UI", system-ui,
-        sans-serif;
+    font-family: var(--font-label);
     transition:
-        transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 180ms var(--ease-out),
         border-color 180ms ease,
         opacity 180ms ease,
         box-shadow 180ms ease,
@@ -743,8 +769,7 @@ h1 {
     pointer-events: none;
 }
 
-.dropzone:not(.disabled):hover,
-.dropzone.hovered {
+.dropzone:not(.disabled):hover {
     border-color: color-mix(
         in oklch,
         var(--accent) 32%,
@@ -769,13 +794,8 @@ h1 {
 .dropzone.drag-reject {
     border-color: var(--danger);
     box-shadow:
-        0 0 0 8px rgb(220 38 38 / 0.12),
+        0 0 0 8px color-mix(in oklch, var(--danger) 16%, transparent),
         var(--shadow-soft);
-}
-
-.dropzone.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .dropzone input {
@@ -850,8 +870,7 @@ h1 {
         transform 180ms ease;
 }
 
-.dropzone:not(.disabled):hover .upload-well,
-.dropzone.hovered .upload-well {
+.dropzone:not(.disabled):hover .upload-well {
     border-color: color-mix(
         in oklch,
         var(--accent) 56%,
@@ -989,7 +1008,7 @@ h1 {
     backdrop-filter: blur(18px) saturate(1.12);
     box-shadow: 0 18px 54px rgb(82 58 30 / 0.13);
     overflow: hidden;
-    animation: cardIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: cardIn 260ms var(--ease-out) both;
 }
 
 @keyframes cardIn {
@@ -1004,7 +1023,7 @@ h1 {
 }
 
 .queue-card-inner {
-    transition: max-height 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: max-height 300ms var(--ease-out);
 }
 
 .queue-card.collapsed .queue-card-inner {
@@ -1019,6 +1038,14 @@ h1 {
         color-mix(in oklch, var(--border) 60%, transparent);
     display: grid;
     gap: 4px;
+    animation: rowIn var(--duration-normal) var(--ease-out) both;
+}
+
+@keyframes rowIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
 }
 
 .queue-row:last-child {
@@ -1060,11 +1087,17 @@ h1 {
     font-weight: 500;
     background: transparent;
     cursor: pointer;
-    transition: color 150ms ease;
+    transition:
+        color var(--duration-fast) var(--ease-out),
+        transform var(--duration-fast) var(--ease-out);
 }
 
 .queue-expand:hover {
     color: var(--fg);
+}
+
+.queue-expand svg {
+    transition: transform var(--duration-normal) var(--ease-out);
 }
 
 .download-btn {
@@ -1075,7 +1108,18 @@ h1 {
     border-radius: 999px;
     background: var(--fg);
     color: var(--bg);
-    transition: transform 150ms ease, background 150ms ease;
+    transition:
+        transform var(--duration-fast) var(--ease-out),
+        background var(--duration-fast) var(--ease-out),
+        opacity var(--duration-normal) var(--ease-out);
+}
+
+/* Pop in when a row finishes */
+@starting-style {
+    .download-btn {
+        opacity: 0;
+        transform: scale(0.85);
+    }
 }
 
 .download-btn:hover {
@@ -1206,32 +1250,27 @@ h1 {
         var(--accent),
         color-mix(in oklch, var(--accent) 45%, white)
     );
-    transition: width 220ms ease;
+    transition: width var(--duration-slow) var(--ease-out);
 }
 
+.uploading .progress-fill,
 .processing .progress-fill {
-    width: 42%;
-    background:
-        linear-gradient(
-            110deg,
-            transparent 0 25%,
-            rgb(255 255 255 / 0.45) 42%,
-            transparent 58% 100%
-        ),
-        linear-gradient(
-            90deg,
-            color-mix(in oklch, var(--accent) 62%, transparent),
-            var(--accent)
-        );
-    animation: shimmer 1.15s linear infinite;
+    width: 40%;
+    background: linear-gradient(
+        90deg,
+        color-mix(in oklch, var(--accent) 30%, transparent),
+        var(--accent),
+        color-mix(in oklch, var(--accent) 30%, transparent)
+    );
+    animation: indeterminate 1.2s var(--ease-in-out) infinite;
 }
 
-@keyframes shimmer {
+@keyframes indeterminate {
     from {
-        transform: translateX(-120%);
+        transform: translateX(-130%);
     }
     to {
-        transform: translateX(250%);
+        transform: translateX(330%);
     }
 }
 
@@ -1257,7 +1296,7 @@ h1 {
     font-weight: 750;
     letter-spacing: -0.01em;
     transition:
-        transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 160ms var(--ease-out),
         filter 160ms ease,
         box-shadow 160ms ease;
 }
@@ -1325,7 +1364,7 @@ h1 {
     pointer-events: none;
     transition:
         opacity 300ms ease,
-        transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform 320ms var(--ease-out);
 }
 
 .wakeup-toast.hidden {
@@ -1471,14 +1510,6 @@ h1 {
         max-width: 118px;
     }
 
-    .theme-desktop-icon {
-        display: none;
-    }
-
-    .theme-mobile-icon {
-        display: block;
-    }
-
     .github-link span {
         display: none;
     }
@@ -1522,6 +1553,36 @@ h1 {
     }
 }
 
+/* Tactile press feedback */
+.wordmark:active,
+.theme-trigger:active,
+.theme-option:active,
+.github-link:active,
+.dropzone:active,
+.queue-expand:active,
+.download-btn:active,
+.mini-action:active,
+.remove-btn:active,
+.start-button:not(:disabled):active {
+    transform: scale(0.97);
+    transition-duration: var(--duration-fast);
+}
+
+/* Don't let hover transforms stick on touch devices */
+@media (hover: none) {
+    .wordmark:hover,
+    .theme-trigger:hover,
+    .github-link:hover,
+    .theme-option:hover,
+    .download-btn:hover,
+    .mini-action:hover,
+    .remove-btn:hover,
+    .start-button:not(:disabled):hover,
+    .dropzone:not(.disabled):hover {
+        transform: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -1534,5 +1595,12 @@ h1 {
 
     .blob {
         transform: none !important;
+    }
+
+    .uploading .progress-fill,
+    .processing .progress-fill {
+        animation: none !important;
+        transform: none !important;
+        width: 60%;
     }
 }

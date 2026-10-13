@@ -148,7 +148,7 @@ function QueueCard({ items, jobMap, onRemove, onCancel, onDownload }) {
                         : status === "error" ? "Failed"
                         : "Ready";
 
-                    const progress = isDone ? 100 : isWorking ? 42 : 0;
+                    const progress = isDone ? 100 : 0;
 
                     const rowClass = [
                         "queue-row",
@@ -212,7 +212,7 @@ function QueueCard({ items, jobMap, onRemove, onCancel, onDownload }) {
             {showExpand && (
                 <button className="queue-expand" type="button" onClick={() => setExpanded(e => !e)}>
                     {expanded ? "Show less" : `${items.length - 1} more`}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 200ms ease" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none" }}>
                         <polyline points="6 9 12 15 18 9" />
                     </svg>
                 </button>
