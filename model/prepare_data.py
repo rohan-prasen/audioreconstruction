@@ -33,9 +33,16 @@ def transcode_file(src: Path, dst: Path, bitrate: int) -> bool:
     dst.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
-            "ffmpeg", "-y", "-i", str(src),
-            "-codec:a", "libmp3lame", "-b:a", f"{bitrate}k",
-            "-ar", "44100",
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(src),
+            "-codec:a",
+            "libmp3lame",
+            "-b:a",
+            f"{bitrate}k",
+            "-ar",
+            "44100",
             str(dst),
         ],
         capture_output=True,
@@ -45,8 +52,18 @@ def transcode_file(src: Path, dst: Path, bitrate: int) -> bool:
 
 
 @click.command()
-@click.option("--input", "input_dir", type=click.Path(exists=True, path_type=Path), default=Path("data/lossless"))
-@click.option("--output", "output_dir", type=click.Path(path_type=Path), default=Path("data/lossy"))
+@click.option(
+    "--input",
+    "input_dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/lossless"),
+)
+@click.option(
+    "--output",
+    "output_dir",
+    type=click.Path(path_type=Path),
+    default=Path("data/lossy"),
+)
 def main(input_dir: Path, output_dir: Path) -> None:
     check_ffmpeg()
 
@@ -79,7 +96,9 @@ def main(input_dir: Path, output_dir: Path) -> None:
                     skipped += 1
                 progress.advance(task)
 
-    console.print(f"[green]Done.[/green] Created: {created}, Skipped (existing): {skipped}")
+    console.print(
+        f"[green]Done.[/green] Created: {created}, Skipped (existing): {skipped}"
+    )
 
 
 if __name__ == "__main__":

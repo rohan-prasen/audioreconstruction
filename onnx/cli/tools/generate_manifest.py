@@ -1,4 +1,5 @@
 """Create the manifest.json required by an Audioreconstructor GitHub Release."""
+
 from __future__ import annotations
 
 import argparse
@@ -31,9 +32,20 @@ def describe(path: Path) -> dict[str, int | str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", required=True, help="PyPI version, for example 1.0.0")
-    parser.add_argument("--assets-dir", type=Path, required=True, help="directory containing the six release assets")
-    parser.add_argument("--output", type=Path, help="manifest path (default: <assets-dir>/manifest.json)")
+    parser.add_argument(
+        "--version", required=True, help="PyPI version, for example 1.0.0"
+    )
+    parser.add_argument(
+        "--assets-dir",
+        type=Path,
+        required=True,
+        help="directory containing the six release assets",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="manifest path (default: <assets-dir>/manifest.json)",
+    )
     args = parser.parse_args()
 
     missing = [name for name in ASSET_NAMES if not (args.assets_dir / name).is_file()]

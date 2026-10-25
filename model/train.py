@@ -51,7 +51,13 @@ def train_one_epoch(
 ) -> dict[str, float]:
     generator.train()
     discriminator.train()
-    totals: dict[str, float] = {"g_loss": 0, "d_loss": 0, "spec": 0, "feat": 0, "adv": 0}
+    totals: dict[str, float] = {
+        "g_loss": 0,
+        "d_loss": 0,
+        "spec": 0,
+        "feat": 0,
+        "adv": 0,
+    }
     steps = 0
 
     for lossy, lossless in dataloader:
@@ -123,9 +129,21 @@ def validate(
 @click.option("--batch-size", default=4, type=int)
 @click.option("--lr", default=1e-4, type=float)
 @click.option("--resume", type=click.Path(exists=True, path_type=Path), default=None)
-@click.option("--checkpoint-dir", type=click.Path(path_type=Path), default=Path("model/checkpoints"))
-@click.option("--data-lossless", type=click.Path(exists=True, path_type=Path), default=Path("data/lossless"))
-@click.option("--data-lossy", type=click.Path(exists=True, path_type=Path), default=Path("data/lossy"))
+@click.option(
+    "--checkpoint-dir",
+    type=click.Path(path_type=Path),
+    default=Path("model/checkpoints"),
+)
+@click.option(
+    "--data-lossless",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/lossless"),
+)
+@click.option(
+    "--data-lossy",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/lossy"),
+)
 def main(
     epochs: int,
     batch_size: int,
@@ -136,23 +154,34 @@ def main(
     data_lossy: Path,
 ) -> None:
     model_cfg = ModelConfig()
-    train_cfg = TrainConfig(epochs=epochs, batch_size=batch_size, lr_generator=lr, lr_discriminator=lr)
+    train_cfg = TrainConfig(
+        epochs=epochs, batch_size=batch_size, lr_generator=lr, lr_discriminator=lr
+    )
     data_cfg = DataConfig(lossless_dir=data_lossless, lossy_dir=data_lossy)
 
     set_seed(train_cfg.seed)
     device = get_device()
     console.print(f"Device: [bold]{device}[/bold]")
 
-    train_ds, val_ds = build_splits(model_cfg, data_cfg, train_cfg.val_split, train_cfg.seed)
+    train_ds, val_ds = build_splits(
+        model_cfg, data_cfg, train_cfg.val_split, train_cfg.seed
+    )
     console.print(f"Train: {len(train_ds)} files, Val: {len(val_ds)} files")
 
     train_loader = DataLoader(
-        train_ds, batch_size=train_cfg.batch_size, shuffle=True,
-        num_workers=train_cfg.num_workers, pin_memory=True, drop_last=True,
+        train_ds,
+        batch_size=train_cfg.batch_size,
+        shuffle=True,
+        num_workers=train_cfg.num_workers,
+        pin_memory=True,
+        drop_last=True,
     )
     val_loader = DataLoader(
-        val_ds, batch_size=train_cfg.batch_size, shuffle=False,
-        num_workers=train_cfg.num_workers, pin_memory=True,
+        val_ds,
+        batch_size=train_cfg.batch_size,
+        shuffle=False,
+        num_workers=train_cfg.num_workers,
+        pin_memory=True,
     )
 
     generator = Generator(model_cfg).to(device)
@@ -160,10 +189,18 @@ def main(
 
     g_params = sum(p.numel() for p in generator.parameters())
     d_params = sum(p.numel() for p in discriminator.parameters())
-    console.print(f"Generator: {g_params / 1e6:.1f}M params, Discriminator: {d_params / 1e6:.1f}M params")
+    console.print(
+        f"Generator: {g_params / 1e6:.1f}M params, Discriminator: {d_params / 1e6:.1f}M params"
+    )
 
-    opt_g = torch.optim.Adam(generator.parameters(), lr=train_cfg.lr_generator, betas=train_cfg.adam_betas)
-    opt_d = torch.optim.Adam(discriminator.parameters(), lr=train_cfg.lr_discriminator, betas=train_cfg.adam_betas)
+    opt_g = torch.optim.Adam(
+        generator.parameters(), lr=train_cfg.lr_generator, betas=train_cfg.adam_betas
+    )
+    opt_d = torch.optim.Adam(
+        discriminator.parameters(),
+        lr=train_cfg.lr_discriminator,
+        betas=train_cfg.adam_betas,
+    )
     scaler = torch.amp.GradScaler("cuda")
     spectral_loss_fn = SpectralLoss().to(device)
 
@@ -183,11 +220,21 @@ def main(
             TimeRemainingColumn(),
             console=console,
         ) as progress:
-            task_id = progress.add_task(f"Epoch {epoch + 1}/{train_cfg.epochs}", total=len(train_loader))
+            task_id = progress.add_task(
+                f"Epoch {epoch + 1}/{train_cfg.epochs}", total=len(train_loader)
+            )
             metrics = train_one_epoch(
-                generator, discriminator, train_loader,
-                opt_g, opt_d, spectral_loss_fn, scaler,
-                train_cfg, device, progress, task_id,
+                generator,
+                discriminator,
+                train_loader,
+                opt_g,
+                opt_d,
+                spectral_loss_fn,
+                scaler,
+                train_cfg,
+                device,
+                progress,
+                task_id,
             )
 
         line = (
@@ -201,15 +248,36 @@ def main(
             line += f" | Val: {val_loss:.4f}"
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                save_checkpoint(generator, discriminator, opt_g, opt_d, epoch + 1, checkpoint_dir / "best")
+                save_checkpoint(
+                    generator,
+                    discriminator,
+                    opt_g,
+                    opt_d,
+                    epoch + 1,
+                    checkpoint_dir / "best",
+                )
                 line += " [green]*best*[/green]"
 
         console.print(line)
 
         if (epoch + 1) % train_cfg.checkpoint_interval == 0:
-            save_checkpoint(generator, discriminator, opt_g, opt_d, epoch + 1, checkpoint_dir / f"epoch_{epoch + 1}")
+            save_checkpoint(
+                generator,
+                discriminator,
+                opt_g,
+                opt_d,
+                epoch + 1,
+                checkpoint_dir / f"epoch_{epoch + 1}",
+            )
 
-    save_checkpoint(generator, discriminator, opt_g, opt_d, train_cfg.epochs, checkpoint_dir / "final")
+    save_checkpoint(
+        generator,
+        discriminator,
+        opt_g,
+        opt_d,
+        train_cfg.epochs,
+        checkpoint_dir / "final",
+    )
     model_cfg.save(checkpoint_dir / "config.json")
     console.print("[bold green]Training complete.[/bold green]")
 

@@ -1,4 +1,5 @@
 """Folder discovery and output mapping for batch (``--folder``) enhancement."""
+
 from __future__ import annotations
 
 from pathlib import Path

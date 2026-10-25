@@ -68,9 +68,13 @@ def _load_audio_sf(path: Path, target_sr: int, channels: int) -> torch.Tensor:
 
 
 @torch.no_grad()
-def _reconstruct_sf(generator: Generator, input_path: Path, device: torch.device) -> torch.Tensor:
+def _reconstruct_sf(
+    generator: Generator, input_path: Path, device: torch.device
+) -> torch.Tensor:
     sr = generator.cfg.sample_rate
-    waveform = _load_audio_sf(input_path, target_sr=sr, channels=generator.cfg.in_channels)
+    waveform = _load_audio_sf(
+        input_path, target_sr=sr, channels=generator.cfg.in_channels
+    )
     peak = waveform.abs().max()
     if peak > 0:
         waveform = waveform / peak
@@ -99,7 +103,12 @@ def _reconstruct_sf(generator: Generator, input_path: Path, device: torch.device
     return torch.cat(chunks, dim=-1)
 
 
-app = FastAPI(title="Audio Reconstruction", description="The API backend which serves the GAN model which will reconstruct the lossless audio signals from the inputted lossy audio", version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="Audio Reconstruction",
+    description="The API backend which serves the GAN model which will reconstruct the lossless audio signals from the inputted lossy audio",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -109,9 +118,11 @@ app.add_middleware(
     allow_headers=["Accept", "Content-Type"],
 )
 
+
 @app.get("/")
 async def hello():
-    return {"Hello" : "Welcome to Audio Reconstruction API"}
+    return {"Hello": "Welcome to Audio Reconstruction API"}
+
 
 @app.get("/health-check")
 async def health_check():
@@ -125,14 +136,24 @@ async def health_check():
 @app.post("/model-serve")
 async def model_serve(file: UploadFile):
     if not app.state.model_loaded:
-        raise HTTPException(status_code=503, detail="Model not loaded. Place a checkpoint in the configured directory.")
+        raise HTTPException(
+            status_code=503,
+            detail="Model not loaded. Place a checkpoint in the configured directory.",
+        )
 
-    if file.content_type and "audio" not in file.content_type and "octet-stream" not in file.content_type:
+    if (
+        file.content_type
+        and "audio" not in file.content_type
+        and "octet-stream" not in file.content_type
+    ):
         raise HTTPException(status_code=415, detail="Expected an audio file (MP3).")
 
     content = await file.read()
     if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail=f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.")
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.",
+        )
 
     input_tmp = None
     output_tmp = None

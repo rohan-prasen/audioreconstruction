@@ -90,7 +90,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compare a reference FLAC against a lossy MP3 — measures how much quality the MP3 encoding lost"
     )
-    parser.add_argument("flac", type=Path, help="Path to the reference (lossless) FLAC file")
+    parser.add_argument(
+        "flac", type=Path, help="Path to the reference (lossless) FLAC file"
+    )
     parser.add_argument("mp3", type=Path, help="Path to the MP3 file being tested")
     args = parser.parse_args()
 
@@ -113,7 +115,11 @@ def main() -> None:
     snr = compute_snr(ref, test)
     similarity = compute_spectrogram_similarity(ref, test)
 
-    table = Table(title="FLAC vs MP3 — Lossy Encoding Quality", show_header=True, header_style="bold")
+    table = Table(
+        title="FLAC vs MP3 — Lossy Encoding Quality",
+        show_header=True,
+        header_style="bold",
+    )
     table.add_column("Metric", style="bold")
     table.add_column("Value", justify="right")
     table.add_column("Interpretation")
@@ -153,20 +159,26 @@ def main() -> None:
 
     console.print()
     if similarity >= 95 and snr >= 20:
-        console.print(Panel(
-            "[green bold]TRANSPARENT[/] — MP3 is perceptually close to the lossless source",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                "[green bold]TRANSPARENT[/] — MP3 is perceptually close to the lossless source",
+                border_style="green",
+            )
+        )
     elif similarity >= 80 and snr >= 10:
-        console.print(Panel(
-            "[yellow bold]ACCEPTABLE[/] — some quality lost but structurally intact",
-            border_style="yellow",
-        ))
+        console.print(
+            Panel(
+                "[yellow bold]ACCEPTABLE[/] — some quality lost but structurally intact",
+                border_style="yellow",
+            )
+        )
     else:
-        console.print(Panel(
-            "[red bold]SIGNIFICANT LOSS[/] — MP3 encoding degraded the audio substantially",
-            border_style="red",
-        ))
+        console.print(
+            Panel(
+                "[red bold]SIGNIFICANT LOSS[/] — MP3 encoding degraded the audio substantially",
+                border_style="red",
+            )
+        )
 
 
 if __name__ == "__main__":

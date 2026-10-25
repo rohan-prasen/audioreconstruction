@@ -1,4 +1,5 @@
 """Click command-line interface for audioreconstructor."""
+
 from __future__ import annotations
 
 import sys
@@ -14,7 +15,9 @@ PROVIDERS = ("auto", "cpu", "directml", "coreml")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
-@click.version_option(get_package_version(), "-V", "--version", prog_name="audioreconstructor")
+@click.version_option(
+    get_package_version(), "-V", "--version", prog_name="audioreconstructor"
+)
 def cli() -> None:
     """Enhance audio with the Audioreconstructor ONNX model."""
 
@@ -38,11 +41,36 @@ def doctor() -> None:
 
 
 @cli.command()
-@click.option("--input", "input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path), help="Input audio file.")
-@click.option("--folder", type=click.Path(exists=True, file_okay=False, path_type=Path), help="Folder of audio files to enhance recursively.")
-@click.option("--output", "output_path", type=click.Path(dir_okay=False, path_type=Path), help="Output FLAC file (with --input).")
-@click.option("--provider", type=click.Choice(PROVIDERS), default="auto", show_default=True, help="ONNX execution provider.")
-def enhance(input_path: Path | None, folder: Path | None, output_path: Path | None, provider: str) -> None:
+@click.option(
+    "--input",
+    "input_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Input audio file.",
+)
+@click.option(
+    "--folder",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Folder of audio files to enhance recursively.",
+)
+@click.option(
+    "--output",
+    "output_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Output FLAC file (with --input).",
+)
+@click.option(
+    "--provider",
+    type=click.Choice(PROVIDERS),
+    default="auto",
+    show_default=True,
+    help="ONNX execution provider.",
+)
+def enhance(
+    input_path: Path | None,
+    folder: Path | None,
+    output_path: Path | None,
+    provider: str,
+) -> None:
     """Reconstruct high-fidelity FLAC from lossy audio."""
     if bool(input_path) == bool(folder):
         raise click.UsageError("Provide exactly one of --input or --folder.")

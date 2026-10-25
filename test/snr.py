@@ -1,4 +1,5 @@
 """Signal-to-Noise Ratio between two audio files."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,7 +20,7 @@ def load_mono(path: Path, target_sr: int) -> np.ndarray:
 
 
 def compute_snr(ref: np.ndarray, deg: np.ndarray) -> float:
-    signal_power = float((ref ** 2).mean())
+    signal_power = float((ref**2).mean())
     noise_power = float(((ref - deg) ** 2).mean())
     return 10.0 * np.log10(signal_power / max(noise_power, 1e-12))
 
@@ -27,7 +28,9 @@ def compute_snr(ref: np.ndarray, deg: np.ndarray) -> float:
 @click.command()
 @click.argument("reference", type=click.Path(exists=True, path_type=Path))
 @click.argument("degraded", type=click.Path(exists=True, path_type=Path))
-@click.option("--sr", default=44100, show_default=True, help="Sample rate for comparison.")
+@click.option(
+    "--sr", default=44100, show_default=True, help="Sample rate for comparison."
+)
 @click.option("--verbose", "-v", is_flag=True)
 def main(reference: Path, degraded: Path, sr: int, verbose: bool) -> None:
     """Signal-to-Noise Ratio (dB) between REFERENCE and DEGRADED audio.

@@ -1,4 +1,5 @@
 """Install and invoke versioned Audioreconstructor GitHub Release assets."""
+
 from __future__ import annotations
 
 import hashlib
@@ -104,19 +105,40 @@ def detect_target(
     machine = (machine or platform.machine()).lower()
     if system in {"Linux", "Windows"}:
         if machine not in {"x86_64", "amd64"}:
-            raise CliError(f"unsupported architecture: {machine}. Only amd64 is supported on {system}.")
+            raise CliError(
+                f"unsupported architecture: {machine}. Only amd64 is supported on {system}."
+            )
         if system == "Linux":
-            return Target(system, "amd64", "audioreconstructor-linux-amd64", "audioreconstructor")
-        return Target(system, "amd64", "audioreconstructor-windows-amd64.exe", "audioreconstructor.exe")
+            return Target(
+                system, "amd64", "audioreconstructor-linux-amd64", "audioreconstructor"
+            )
+        return Target(
+            system,
+            "amd64",
+            "audioreconstructor-windows-amd64.exe",
+            "audioreconstructor.exe",
+        )
     if system == "Darwin":
-        if machine == "x86_64" and (translated if translated is not None else _rosetta_translated()):
-            machine = "arm64"  # Rosetta 2: the downloaded binary runs natively, prefer arm64
+        if machine == "x86_64" and (
+            translated if translated is not None else _rosetta_translated()
+        ):
+            machine = (
+                "arm64"  # Rosetta 2: the downloaded binary runs natively, prefer arm64
+            )
         if machine == "arm64":
-            return Target(system, "arm64", "audioreconstructor-macos-amd64", "audioreconstructor")
+            return Target(
+                system, "arm64", "audioreconstructor-macos-amd64", "audioreconstructor"
+            )
         if machine == "x86_64":
-            return Target(system, "intel", "audioreconstructor-macos-intel", "audioreconstructor")
-        raise CliError(f"unsupported architecture: {machine}. Only arm64 and x86-64 are supported on macOS.")
-    raise CliError(f"unsupported operating system: {system}. Only Linux, Windows, and macOS are supported.")
+            return Target(
+                system, "intel", "audioreconstructor-macos-intel", "audioreconstructor"
+            )
+        raise CliError(
+            f"unsupported architecture: {machine}. Only arm64 and x86-64 are supported on macOS."
+        )
+    raise CliError(
+        f"unsupported operating system: {system}. Only Linux, Windows, and macOS are supported."
+    )
 
 
 def get_cache_root(
@@ -127,7 +149,11 @@ def get_cache_root(
     environ = os.environ if environ is None else environ
     home = Path.home() if home is None else home
     if system == "Linux":
-        return Path(environ["XDG_CACHE_HOME"]) / PACKAGE_NAME if environ.get("XDG_CACHE_HOME") else home / ".cache" / PACKAGE_NAME
+        return (
+            Path(environ["XDG_CACHE_HOME"]) / PACKAGE_NAME
+            if environ.get("XDG_CACHE_HOME")
+            else home / ".cache" / PACKAGE_NAME
+        )
     if system == "Windows":
         local_app_data = environ.get("LOCALAPPDATA")
         base = Path(local_app_data) if local_app_data else home / "AppData" / "Local"
@@ -137,7 +163,9 @@ def get_cache_root(
     raise CliError(f"unsupported operating system: {system}")
 
 
-def installation_paths(cache_root: Path, version: str, target: Target) -> dict[str, Path]:
+def installation_paths(
+    cache_root: Path, version: str, target: Target
+) -> dict[str, Path]:
     directory = cache_root / version
     return {
         "directory": directory,
@@ -172,7 +200,9 @@ def artifact_is_valid(path: Path, artifact: Artifact) -> tuple[bool, str]:
     return True, "valid"
 
 
-def _read_manifest(path: Path, package_version: str, required_assets: Sequence[str]) -> dict[str, Artifact]:
+def _read_manifest(
+    path: Path, package_version: str, required_assets: Sequence[str]
+) -> dict[str, Artifact]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -181,9 +211,13 @@ def _read_manifest(path: Path, package_version: str, required_assets: Sequence[s
     if raw.get("schemaVersion") != 1:
         raise CliError(f"{MANIFEST_NAME} has an unsupported schema version")
     if raw.get("version") != package_version:
-        raise CliError(f"{MANIFEST_NAME} is for version {raw.get('version')!r}, expected {package_version!r}")
+        raise CliError(
+            f"{MANIFEST_NAME} is for version {raw.get('version')!r}, expected {package_version!r}"
+        )
     if raw.get("releaseTag") != release_tag(package_version):
-        raise CliError(f"{MANIFEST_NAME} does not match release {release_tag(package_version)}")
+        raise CliError(
+            f"{MANIFEST_NAME} does not match release {release_tag(package_version)}"
+        )
     files = raw.get("files")
     if not isinstance(files, dict):
         raise CliError(f"{MANIFEST_NAME} has no files mapping")
@@ -204,7 +238,9 @@ def _read_manifest(path: Path, package_version: str, required_assets: Sequence[s
 
 
 def _temporary_path(directory: Path, filename: str) -> Path:
-    with tempfile.NamedTemporaryFile(prefix=f".{filename}.", suffix=".part", dir=directory, delete=False) as handle:
+    with tempfile.NamedTemporaryFile(
+        prefix=f".{filename}.", suffix=".part", dir=directory, delete=False
+    ) as handle:
         pass
     return Path(handle.name)
 
@@ -216,14 +252,21 @@ def download(url: str, destination: Path, expected: Artifact | None = None) -> N
     ``DOWNLOAD_RETRIES`` times with linear backoff. Permanent errors (4xx such as a
     missing asset) fail immediately without retrying.
     """
-    request = Request(url, headers={"User-Agent": f"{PACKAGE_NAME}/{get_package_version()}"})
+    request = Request(
+        url, headers={"User-Agent": f"{PACKAGE_NAME}/{get_package_version()}"}
+    )
     digest = hashlib.sha256()
     size = 0
     for attempt in range(1, DOWNLOAD_RETRIES + 1):
         digest = hashlib.sha256()
         size = 0
         try:
-            with urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS, context=_SSL_CONTEXT) as response, destination.open("wb") as handle:
+            with (
+                urlopen(
+                    request, timeout=DOWNLOAD_TIMEOUT_SECONDS, context=_SSL_CONTEXT
+                ) as response,
+                destination.open("wb") as handle,
+            ):
                 while data := response.read(CHUNK_SIZE):
                     handle.write(data)
                     digest.update(data)
@@ -243,7 +286,9 @@ def download(url: str, destination: Path, expected: Artifact | None = None) -> N
 
     if expected is not None:
         if size != expected.size:
-            raise CliError(f"downloaded {expected.name} has {size} bytes; expected {expected.size}")
+            raise CliError(
+                f"downloaded {expected.name} has {size} bytes; expected {expected.size}"
+            )
         if digest.hexdigest() != expected.sha256:
             raise CliError(f"downloaded {expected.name} failed SHA-256 verification")
 
@@ -257,7 +302,9 @@ def _make_executable(path: Path, target: Target) -> None:
         raise CliError(f"could not make {path.name} executable: {exc}") from exc
 
 
-def _load_or_download_manifest(paths: Mapping[str, Path], version: str, required_assets: Sequence[str]) -> dict[str, Artifact]:
+def _load_or_download_manifest(
+    paths: Mapping[str, Path], version: str, required_assets: Sequence[str]
+) -> dict[str, Artifact]:
     manifest = paths["manifest"]
     try:
         return _read_manifest(manifest, version, required_assets)
@@ -274,7 +321,9 @@ def _load_or_download_manifest(paths: Mapping[str, Path], version: str, required
         temporary.unlink(missing_ok=True)
 
 
-def _prune_old_versions(cache_root: Path, current_version: str, report: Callable[[str], None]) -> None:
+def _prune_old_versions(
+    cache_root: Path, current_version: str, report: Callable[[str], None]
+) -> None:
     try:
         children = list(cache_root.iterdir())
     except OSError:
@@ -322,7 +371,11 @@ def setup_assets(
             report(f"Downloading {asset_name}")
             temporary = _temporary_path(paths["directory"], asset_name)
             try:
-                download(release_url(package_version, asset_name), temporary, artifacts[asset_name])
+                download(
+                    release_url(package_version, asset_name),
+                    temporary,
+                    artifacts[asset_name],
+                )
                 if asset_name == target.asset_name:
                     _make_executable(temporary, target)
                 os.replace(temporary, destination)
@@ -352,14 +405,22 @@ def _self_test(paths: Mapping[str, Path]) -> tuple[bool, str]:
         "--self-test",
     ]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=SELF_TEST_TIMEOUT_SECONDS, check=False)
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=SELF_TEST_TIMEOUT_SECONDS,
+            check=False,
+        )
     except OSError as exc:
         return False, str(exc)
     except subprocess.TimeoutExpired:
         return False, f"timed out after {SELF_TEST_TIMEOUT_SECONDS} seconds"
     if result.returncode == 0 and "SELF-TEST PASS" in result.stdout:
         return True, "passed"
-    lines = [line for line in (result.stderr or result.stdout).splitlines() if line.strip()]
+    lines = [
+        line for line in (result.stderr or result.stdout).splitlines() if line.strip()
+    ]
     # PyInstaller's frozen bootloader appends a generic "Failed to execute script ...
     # unhandled exception!" banner as the final line, burying the real Python traceback
     # printed just above it. Drop that banner so the actual error reaches the report.
@@ -406,7 +467,9 @@ def doctor(
     }
     healthy = True
     for asset_name in required_assets:
-        valid, detail = artifact_is_valid(path_by_asset[asset_name], artifacts[asset_name])
+        valid, detail = artifact_is_valid(
+            path_by_asset[asset_name], artifacts[asset_name]
+        )
         label = "PASS" if valid else "FAIL"
         report(f"[{label}] {asset_name}: {detail}")
         healthy = healthy and valid
@@ -453,12 +516,20 @@ def run_inference(
     target = target or detect_target()
     cache_root = cache_root or get_cache_root(target.system)
     paths = installation_paths(cache_root, package_version, target)
-    missing = [key for key in ("manifest", "binary", "model", "config") if not paths[key].is_file()]
+    missing = [
+        key
+        for key in ("manifest", "binary", "model", "config")
+        if not paths[key].is_file()
+    ]
     if missing:
         names = ", ".join(paths[key].name for key in missing)
-        raise CliError(f"setup is incomplete ({names}). Run 'audioreconstructor setup'.")
+        raise CliError(
+            f"setup is incomplete ({names}). Run 'audioreconstructor setup'."
+        )
     if target.system != "Windows" and not os.access(paths["binary"], os.X_OK):
-        raise CliError(f"{paths['binary']} is not executable. Run 'audioreconstructor setup'.")
+        raise CliError(
+            f"{paths['binary']} is not executable. Run 'audioreconstructor setup'."
+        )
     command = [
         str(paths["binary"]),
         "--model",

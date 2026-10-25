@@ -42,9 +42,15 @@ class InferenceBatcher:
 
     @torch.inference_mode()
     def _warmup_sync(self, cfg) -> None:
-        logger.info("Warming up model (batch=%d, seg=%d)...", self._max_batch, cfg.segment_length)
+        logger.info(
+            "Warming up model (batch=%d, seg=%d)...",
+            self._max_batch,
+            cfg.segment_length,
+        )
         dummy = torch.randn(
-            self._max_batch, cfg.in_channels, cfg.segment_length,
+            self._max_batch,
+            cfg.in_channels,
+            cfg.segment_length,
             device=self._device,
         )
         with torch.amp.autocast("cuda", enabled=self._device.type == "cuda"):
@@ -87,9 +93,7 @@ class InferenceBatcher:
                 if remaining <= 0:
                     break
                 try:
-                    item = await asyncio.wait_for(
-                        self._queue.get(), timeout=remaining
-                    )
+                    item = await asyncio.wait_for(self._queue.get(), timeout=remaining)
                     if item is None:
                         break
                     batch.append(item)
@@ -115,7 +119,9 @@ class InferenceBatcher:
 
         try:
             loop = asyncio.get_running_loop()
-            outputs = await loop.run_in_executor(self._gpu_thread, self._gpu_forward, inputs)
+            outputs = await loop.run_in_executor(
+                self._gpu_thread, self._gpu_forward, inputs
+            )
 
             for i, req in enumerate(batch):
                 if not req.future.cancelled():

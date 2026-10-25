@@ -18,7 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from audioreconstructor import app, batch, cli
 from click.testing import CliRunner
 
-TARGET = cli.Target("Linux", "amd64", "audioreconstructor-linux-amd64", "audioreconstructor")
+TARGET = cli.Target(
+    "Linux", "amd64", "audioreconstructor-linux-amd64", "audioreconstructor"
+)
 
 
 class FakeProcess:
@@ -84,7 +86,9 @@ class ReleaseFixture:
         self.sources[f"test://{cli.MANIFEST_NAME}"] = manifest_path
         self.downloaded: list[str] = []
 
-    def download(self, url: str, destination: Path, expected: cli.Artifact | None = None) -> None:
+    def download(
+        self, url: str, destination: Path, expected: cli.Artifact | None = None
+    ) -> None:
         self.downloaded.append(url)
         shutil.copyfile(self.sources[url], destination)
         if expected is not None:
@@ -106,8 +110,11 @@ class CliTests(unittest.TestCase):
 
     def install(self, target: cli.Target = TARGET) -> tuple[dict[str, Path], list[str]]:
         messages: list[str] = []
-        with mock.patch.object(cli, "release_url", side_effect=lambda _version, name: f"test://{name}"), mock.patch.object(
-            cli, "download", side_effect=self.release.download
+        with (
+            mock.patch.object(
+                cli, "release_url", side_effect=lambda _version, name: f"test://{name}"
+            ),
+            mock.patch.object(cli, "download", side_effect=self.release.download),
         ):
             paths = cli.setup_assets(
                 package_version=self.release.version,
@@ -126,7 +133,9 @@ class CliTests(unittest.TestCase):
 
         self.assertTrue(paths["binary"].is_file())
         self.assertTrue(os.access(paths["binary"], os.X_OK))
-        self.assertEqual(paths["model"].read_bytes(), self.release.assets[cli.MODEL_NAME])
+        self.assertEqual(
+            paths["model"].read_bytes(), self.release.assets[cli.MODEL_NAME]
+        )
         self.assertFalse(old_cache.exists())
         self.assertIn("Setup complete.", messages)
         self.assertEqual(len(self.release.downloaded), 4)
@@ -143,13 +152,17 @@ class CliTests(unittest.TestCase):
 
         self.install()
 
-        self.assertEqual(paths["model"].read_bytes(), self.release.assets[cli.MODEL_NAME])
+        self.assertEqual(
+            paths["model"].read_bytes(), self.release.assets[cli.MODEL_NAME]
+        )
         self.assertEqual(self.release.downloaded, [f"test://{cli.MODEL_NAME}"])
 
     def test_doctor_runs_self_test_after_integrity_checks(self) -> None:
         self.install()
         messages: list[str] = []
-        with mock.patch.object(cli, "_self_test", return_value=(True, "passed")) as self_test:
+        with mock.patch.object(
+            cli, "_self_test", return_value=(True, "passed")
+        ) as self_test:
             result = cli.doctor(
                 package_version=self.release.version,
                 target=TARGET,
@@ -180,9 +193,16 @@ class CliTests(unittest.TestCase):
 
     def test_inference_streams_progress_and_injects_cached_paths(self) -> None:
         paths, _ = self.install()
-        lines = ["PROGRESS 50\n", "WARN metadata copy skipped\n", "PROGRESS 100\n", "DONE result.flac\n"]
+        lines = [
+            "PROGRESS 50\n",
+            "WARN metadata copy skipped\n",
+            "PROGRESS 100\n",
+            "DONE result.flac\n",
+        ]
         progress: list[int] = []
-        with mock.patch.object(cli.subprocess, "Popen", return_value=FakeProcess(lines, 0)) as popen:
+        with mock.patch.object(
+            cli.subprocess, "Popen", return_value=FakeProcess(lines, 0)
+        ) as popen:
             code, error = cli.run_inference(
                 Path("source song.mp3"),
                 Path("result.flac"),
@@ -205,7 +225,9 @@ class CliTests(unittest.TestCase):
     def test_inference_captures_error_line_and_exit_code(self) -> None:
         self.install()
         lines = ["PROGRESS 10\n", "ERROR INPUT_READ_FAILED could not read file\n"]
-        with mock.patch.object(cli.subprocess, "Popen", return_value=FakeProcess(lines, 2)):
+        with mock.patch.object(
+            cli.subprocess, "Popen", return_value=FakeProcess(lines, 2)
+        ):
             code, error = cli.run_inference(
                 Path("x.mp3"),
                 Path("y.flac"),
@@ -253,7 +275,10 @@ class CliTests(unittest.TestCase):
                 raise cli.URLError("temporary network error")
             return _FakeResponse(payload)
 
-        with mock.patch.object(cli, "urlopen", side_effect=flaky_urlopen), mock.patch.object(cli.time, "sleep"):
+        with (
+            mock.patch.object(cli, "urlopen", side_effect=flaky_urlopen),
+            mock.patch.object(cli.time, "sleep"),
+        ):
             cli.download("https://example/asset", dest)
 
         self.assertEqual(calls["n"], cli.DOWNLOAD_RETRIES)
@@ -288,7 +313,11 @@ class CliTests(unittest.TestCase):
         self.assertIsInstance(captured["context"], ssl.SSLContext)
 
     def test_self_test_surfaces_real_traceback(self) -> None:
-        paths = {"binary": Path("bin"), "model": Path("model"), "config": Path("config")}
+        paths = {
+            "binary": Path("bin"),
+            "model": Path("model"),
+            "config": Path("config"),
+        }
         result = types.SimpleNamespace(
             returncode=1,
             stdout="",
@@ -307,11 +336,19 @@ class CliTests(unittest.TestCase):
         self.assertNotIn("Failed to execute script", detail)
 
     def test_platform_and_cache_resolution(self) -> None:
-        linux = cli.get_cache_root("Linux", {"XDG_CACHE_HOME": "/tmp/xdg"}, Path("/home/test"))
-        windows = cli.get_cache_root("Windows", {"LOCALAPPDATA": "C:/Users/test/AppData/Local"}, Path("/home/test"))
+        linux = cli.get_cache_root(
+            "Linux", {"XDG_CACHE_HOME": "/tmp/xdg"}, Path("/home/test")
+        )
+        windows = cli.get_cache_root(
+            "Windows",
+            {"LOCALAPPDATA": "C:/Users/test/AppData/Local"},
+            Path("/home/test"),
+        )
         darwin = cli.get_cache_root("Darwin", {}, Path("/Users/test"))
         self.assertEqual(linux, Path("/tmp/xdg") / cli.PACKAGE_NAME)
-        self.assertEqual(windows, Path("C:/Users/test/AppData/Local") / cli.PACKAGE_NAME / "Cache")
+        self.assertEqual(
+            windows, Path("C:/Users/test/AppData/Local") / cli.PACKAGE_NAME / "Cache"
+        )
         self.assertEqual(darwin, Path("/Users/test/Library/Caches") / cli.PACKAGE_NAME)
         with self.assertRaises(cli.CliError):
             cli.detect_target("Darwin", "i386")
@@ -333,7 +370,9 @@ class CliTests(unittest.TestCase):
         self.assertEqual(rosetta.architecture, "arm64")
 
     def test_setup_marks_darwin_binary_executable(self) -> None:
-        darwin_target = cli.Target("Darwin", "arm64", "audioreconstructor-macos-amd64", "audioreconstructor")
+        darwin_target = cli.Target(
+            "Darwin", "arm64", "audioreconstructor-macos-amd64", "audioreconstructor"
+        )
         paths, _ = self.install(target=darwin_target)
         self.assertTrue(paths["binary"].is_file())
         self.assertTrue(os.access(paths["binary"], os.X_OK))
@@ -343,19 +382,33 @@ class CliTests(unittest.TestCase):
         assets_dir.mkdir()
         for name, data in self.release.assets.items():
             (assets_dir / name).write_bytes(data)
-        generator = Path(__file__).resolve().parents[1] / "tools" / "generate_manifest.py"
+        generator = (
+            Path(__file__).resolve().parents[1] / "tools" / "generate_manifest.py"
+        )
 
         result = subprocess.run(
-            [sys.executable, str(generator), "--version", self.release.version, "--assets-dir", str(assets_dir)],
+            [
+                sys.executable,
+                str(generator),
+                "--version",
+                self.release.version,
+                "--assets-dir",
+                str(assets_dir),
+            ],
             capture_output=True,
             text=True,
             check=False,
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        manifest = json.loads((assets_dir / cli.MANIFEST_NAME).read_text(encoding="utf-8"))
+        manifest = json.loads(
+            (assets_dir / cli.MANIFEST_NAME).read_text(encoding="utf-8")
+        )
         self.assertEqual(manifest["releaseTag"], "audioreconstructor-v1.0.0")
-        self.assertEqual(manifest["files"][cli.MODEL_NAME], description(self.release.assets[cli.MODEL_NAME]))
+        self.assertEqual(
+            manifest["files"][cli.MODEL_NAME],
+            description(self.release.assets[cli.MODEL_NAME]),
+        )
 
 
 if __name__ == "__main__":

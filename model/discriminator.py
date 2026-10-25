@@ -8,7 +8,9 @@ class DiscriminatorBlock(nn.Module):
     def __init__(self, in_ch: int, out_ch: int, kernel_size: int, stride: int) -> None:
         super().__init__()
         padding = (kernel_size - 1) // 2
-        self.conv = nn.Conv1d(in_ch, out_ch, kernel_size, stride=stride, padding=padding)
+        self.conv = nn.Conv1d(
+            in_ch, out_ch, kernel_size, stride=stride, padding=padding
+        )
         self.norm = nn.BatchNorm1d(out_ch)
         self.act = nn.LeakyReLU(0.2)
 
@@ -19,13 +21,15 @@ class DiscriminatorBlock(nn.Module):
 class ScaleDiscriminator(nn.Module):
     def __init__(self, in_channels: int = 1) -> None:
         super().__init__()
-        self.layers = nn.ModuleList([
-            DiscriminatorBlock(in_channels, 64, kernel_size=15, stride=1),
-            DiscriminatorBlock(64, 128, kernel_size=41, stride=4),
-            DiscriminatorBlock(128, 256, kernel_size=41, stride=4),
-            DiscriminatorBlock(256, 512, kernel_size=41, stride=4),
-            DiscriminatorBlock(512, 512, kernel_size=5, stride=1),
-        ])
+        self.layers = nn.ModuleList(
+            [
+                DiscriminatorBlock(in_channels, 64, kernel_size=15, stride=1),
+                DiscriminatorBlock(64, 128, kernel_size=41, stride=4),
+                DiscriminatorBlock(128, 256, kernel_size=41, stride=4),
+                DiscriminatorBlock(256, 512, kernel_size=41, stride=4),
+                DiscriminatorBlock(512, 512, kernel_size=5, stride=1),
+            ]
+        )
         self.head = nn.Conv1d(512, 1, kernel_size=3, padding=1)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, list[torch.Tensor]]:

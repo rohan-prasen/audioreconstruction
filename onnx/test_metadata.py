@@ -1,4 +1,5 @@
 """Assert-based self-check for read_id3v1 (no framework). Run: python onnx/test_metadata.py"""
+
 import tempfile
 from pathlib import Path
 
@@ -8,11 +9,21 @@ except ModuleNotFoundError:  # Supports `python onnx/test_metadata.py` as docume
     from inference import read_id3v1
 
 
-def _make_id3v1_tag(title: str, artist: str, album: str, year: str, comment: str) -> bytes:
+def _make_id3v1_tag(
+    title: str, artist: str, album: str, year: str, comment: str
+) -> bytes:
     def pad(text: str, size: int) -> bytes:
         return text.encode("latin-1")[:size].ljust(size, b"\x00")
 
-    return b"TAG" + pad(title, 30) + pad(artist, 30) + pad(album, 30) + pad(year, 4) + pad(comment, 30) + b"\x00"
+    return (
+        b"TAG"
+        + pad(title, 30)
+        + pad(artist, 30)
+        + pad(album, 30)
+        + pad(year, 4)
+        + pad(comment, 30)
+        + b"\x00"
+    )
 
 
 def test_reads_valid_id3v1_tag():

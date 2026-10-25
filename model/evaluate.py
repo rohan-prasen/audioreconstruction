@@ -36,7 +36,9 @@ def load_generator(checkpoint_dir: Path, device: torch.device) -> Generator:
 
 
 @torch.no_grad()
-def reconstruct(generator: Generator, input_path: Path, device: torch.device) -> torch.Tensor:
+def reconstruct(
+    generator: Generator, input_path: Path, device: torch.device
+) -> torch.Tensor:
     sr = generator.cfg.sample_rate
     waveform = load_audio(input_path, target_sr=sr, channels=generator.cfg.in_channels)
     waveform = normalize_audio(waveform)
@@ -74,13 +76,21 @@ def compute_metrics(
     rec = reconstructed[:, :min_len].squeeze().numpy()
     ref = reference[:, :min_len].squeeze().numpy()
 
-    signal_power = float((ref ** 2).mean())
+    signal_power = float((ref**2).mean())
     noise_power = float(((ref - rec) ** 2).mean())
     snr_val = float(10 * np.log10(signal_power / max(noise_power, 1e-10)))
 
     eval_sr = 16000
-    rec_16k = resample(torch.from_numpy(rec).unsqueeze(0), sample_rate, eval_sr).squeeze().numpy()
-    ref_16k = resample(torch.from_numpy(ref).unsqueeze(0), sample_rate, eval_sr).squeeze().numpy()
+    rec_16k = (
+        resample(torch.from_numpy(rec).unsqueeze(0), sample_rate, eval_sr)
+        .squeeze()
+        .numpy()
+    )
+    ref_16k = (
+        resample(torch.from_numpy(ref).unsqueeze(0), sample_rate, eval_sr)
+        .squeeze()
+        .numpy()
+    )
 
     try:
         pesq_score = pesq(eval_sr, ref_16k, rec_16k, "wb")
@@ -91,8 +101,12 @@ def compute_metrics(
 
 
 @click.command()
-@click.option("--checkpoint", type=click.Path(exists=True, path_type=Path), required=True)
-@click.option("--input", "input_path", type=click.Path(exists=True, path_type=Path), required=True)
+@click.option(
+    "--checkpoint", type=click.Path(exists=True, path_type=Path), required=True
+)
+@click.option(
+    "--input", "input_path", type=click.Path(exists=True, path_type=Path), required=True
+)
 @click.option("--output", "output_path", type=click.Path(path_type=Path), default=None)
 @click.option("--reference", type=click.Path(exists=True, path_type=Path), default=None)
 def main(
@@ -134,10 +148,16 @@ def main(
         if reference is not None:
             ref_path = reference / f"{f.stem}.flac" if reference.is_dir() else reference
             if ref_path.exists():
-                ref_audio = load_audio(ref_path, target_sr=generator.cfg.sample_rate, channels=generator.cfg.in_channels)
+                ref_audio = load_audio(
+                    ref_path,
+                    target_sr=generator.cfg.sample_rate,
+                    channels=generator.cfg.in_channels,
+                )
                 ref_audio = normalize_audio(ref_audio)
                 metrics = compute_metrics(result, ref_audio, generator.cfg.sample_rate)
-                table.add_row(f.name, f"{metrics['snr_db']:.2f}", f"{metrics['pesq']:.3f}")
+                table.add_row(
+                    f.name, f"{metrics['snr_db']:.2f}", f"{metrics['pesq']:.3f}"
+                )
             else:
                 table.add_row(f.name, "-", "-")
         else:

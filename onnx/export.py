@@ -12,12 +12,25 @@ from model.evaluate import load_generator
 
 console = Console()
 
-DUMMY_SHAPE = (1, 2, 131072)  # matches ModelConfig.segment_length; chunking happens outside forward()
+DUMMY_SHAPE = (
+    1,
+    2,
+    131072,
+)  # matches ModelConfig.segment_length; chunking happens outside forward()
 
 
 @click.command()
-@click.option("--checkpoint", type=click.Path(exists=True, path_type=Path), default=Path("model/checkpoints/best"))
-@click.option("--output", "output_dir", type=click.Path(path_type=Path), default=Path("onnx/exported"))
+@click.option(
+    "--checkpoint",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("model/checkpoints/best"),
+)
+@click.option(
+    "--output",
+    "output_dir",
+    type=click.Path(path_type=Path),
+    default=Path("onnx/exported"),
+)
 @click.option("--opset", default=18, type=int)
 @click.option("--skip-verify", is_flag=True)
 def main(checkpoint: Path, output_dir: Path, opset: int, skip_verify: bool) -> None:
@@ -57,12 +70,16 @@ def main(checkpoint: Path, output_dir: Path, opset: int, skip_verify: bool) -> N
     if max_diff < 1e-3:
         console.print(f"[green]PASS[/green] max abs diff vs PyTorch: {max_diff:.6f}")
     else:
-        console.print(f"[red]FAIL[/red] max abs diff vs PyTorch: {max_diff:.6f} (threshold 1e-3)")
+        console.print(
+            f"[red]FAIL[/red] max abs diff vs PyTorch: {max_diff:.6f} (threshold 1e-3)"
+        )
         raise SystemExit(1)
 
     console.print()
     console.print("Commit the updated model (tracked via git-lfs, see .gitattributes):")
-    console.print(f"  git add {output_dir}/model.onnx {output_dir}/config.json onnx/manifest.json")
+    console.print(
+        f"  git add {output_dir}/model.onnx {output_dir}/config.json onnx/manifest.json"
+    )
     console.print("  git commit -m 'chore: update exported onnx model'")
 
 

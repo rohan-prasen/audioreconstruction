@@ -1,4 +1,5 @@
 """Mel-spectrogram SSIM between two audio files."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -20,7 +21,9 @@ def load_mono(path: Path, target_sr: int) -> torch.Tensor:
     return waveform.squeeze()
 
 
-def _ssim_vectors(x: np.ndarray, y: np.ndarray, k1: float = 0.01, k2: float = 0.03, L: float = 1.0) -> float:
+def _ssim_vectors(
+    x: np.ndarray, y: np.ndarray, k1: float = 0.01, k2: float = 0.03, L: float = 1.0
+) -> float:
     c1 = (k1 * L) ** 2
     c2 = (k2 * L) ** 2
     mu_x, mu_y = x.mean(), y.mean()
@@ -28,12 +31,14 @@ def _ssim_vectors(x: np.ndarray, y: np.ndarray, k1: float = 0.01, k2: float = 0.
     sigma_y = y.var()
     sigma_xy = float(np.cov(x, y)[0, 1])
     num = (2 * mu_x * mu_y + c1) * (2 * sigma_xy + c2)
-    den = (mu_x ** 2 + mu_y ** 2 + c1) * (sigma_x + sigma_y + c2)
+    den = (mu_x**2 + mu_y**2 + c1) * (sigma_x + sigma_y + c2)
     return float(num / den)
 
 
 def compute_mel_ssim(ref: torch.Tensor, deg: torch.Tensor, sr: int) -> float:
-    mel = T.MelSpectrogram(sample_rate=sr, n_fft=2048, hop_length=512, n_mels=128, power=2.0)
+    mel = T.MelSpectrogram(
+        sample_rate=sr, n_fft=2048, hop_length=512, n_mels=128, power=2.0
+    )
     ref_mel = torch.log1p(mel(ref)).numpy()
     deg_mel = torch.log1p(mel(deg)).numpy()
 
@@ -52,7 +57,9 @@ def compute_mel_ssim(ref: torch.Tensor, deg: torch.Tensor, sr: int) -> float:
 @click.command()
 @click.argument("reference", type=click.Path(exists=True, path_type=Path))
 @click.argument("degraded", type=click.Path(exists=True, path_type=Path))
-@click.option("--sr", default=44100, show_default=True, help="Sample rate for comparison.")
+@click.option(
+    "--sr", default=44100, show_default=True, help="Sample rate for comparison."
+)
 @click.option("--verbose", "-v", is_flag=True)
 def main(reference: Path, degraded: Path, sr: int, verbose: bool) -> None:
     """Mel-spectrogram SSIM between REFERENCE and DEGRADED audio.

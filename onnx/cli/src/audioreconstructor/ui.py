@@ -1,4 +1,5 @@
 """Rich rendering helpers — Spotify-inspired: green accent, otherwise mono."""
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
@@ -21,7 +22,7 @@ WHITE = "#FFFFFF"  # primary text
 MUTED = "#B3B3B3"  # subdued / secondary text
 FAINT = "#727272"  # borders, separators, de-emphasised text
 TRACK = "#404040"  # unfilled progress track
-RED = "#E22134"    # errors only
+RED = "#E22134"  # errors only
 
 # Prefix -> style for the reporter fed into setup_assets()/doctor().
 _LINE_STYLES = {
@@ -44,7 +45,13 @@ def banner(version: str) -> None:
     )
     console.print()
     console.print(
-        Panel(Group(title, subtitle), box=ROUNDED, border_style=FAINT, padding=(0, 2), expand=False)
+        Panel(
+            Group(title, subtitle),
+            box=ROUNDED,
+            border_style=FAINT,
+            padding=(0, 2),
+            expand=False,
+        )
     )
     console.print()
 
@@ -58,7 +65,10 @@ def rich_reporter() -> Callable[[str], None]:
         elif message == "Status: UNHEALTHY":
             style = RED
         else:
-            style = next((s for prefix, s in _LINE_STYLES.items() if message.startswith(prefix)), MUTED)
+            style = next(
+                (s for prefix, s in _LINE_STYLES.items() if message.startswith(prefix)),
+                MUTED,
+            )
         console.print(Padding(Text(message, style=style), (0, 0, 0, 2)))
 
     return report
@@ -72,9 +82,13 @@ def enhance_progress() -> Iterator[Progress]:
         TextColumn(
             "{task.description}",
             style=WHITE,
-            table_column=Column(min_width=18, max_width=42, no_wrap=True, overflow="ellipsis"),
+            table_column=Column(
+                min_width=18, max_width=42, no_wrap=True, overflow="ellipsis"
+            ),
         ),
-        BarColumn(bar_width=None, style=TRACK, complete_style=GREEN, finished_style=GREEN),
+        BarColumn(
+            bar_width=None, style=TRACK, complete_style=GREEN, finished_style=GREEN
+        ),
         TextColumn("{task.percentage:>3.0f}%", style=MUTED),
         console=console,
         expand=True,
@@ -87,20 +101,37 @@ def summary_panel(succeeded: int, failures: list[tuple[str, str]]) -> None:
     """Render a compact result summary panel for batch runs."""
     grid = Table.grid(padding=(0, 1))
     grid.add_row(Text("✓", style=GREEN), Text(f"{succeeded} succeeded", style=WHITE))
-    grid.add_row(Text("✗", style=RED if failures else FAINT), Text(f"{len(failures)} failed", style=RED if failures else FAINT))
+    grid.add_row(
+        Text("✗", style=RED if failures else FAINT),
+        Text(f"{len(failures)} failed", style=RED if failures else FAINT),
+    )
     if failures:
         grid.add_row("", "")
         for name, err in failures:
             grid.add_row(Text("•", style=RED), Text(f"{name} — {err}", style=MUTED))
     console.print()
-    console.print(Panel(grid, title="Summary", title_align="left", box=ROUNDED, border_style=FAINT, padding=(0, 2), expand=False))
+    console.print(
+        Panel(
+            grid,
+            title="Summary",
+            title_align="left",
+            box=ROUNDED,
+            border_style=FAINT,
+            padding=(0, 2),
+            expand=False,
+        )
+    )
 
 
 def result_panel(output_path: str) -> None:
     """Render the single-file success panel."""
-    body = Text.assemble(("✓ ", GREEN), ("Saved  ", f"bold {WHITE}"), (output_path, MUTED))
+    body = Text.assemble(
+        ("✓ ", GREEN), ("Saved  ", f"bold {WHITE}"), (output_path, MUTED)
+    )
     console.print()
-    console.print(Panel(body, box=ROUNDED, border_style=FAINT, padding=(0, 2), expand=False))
+    console.print(
+        Panel(body, box=ROUNDED, border_style=FAINT, padding=(0, 2), expand=False)
+    )
 
 
 def note(message: str) -> None:
@@ -109,4 +140,14 @@ def note(message: str) -> None:
 
 def error_panel(message: str) -> None:
     console.print()
-    console.print(Panel(Text(message, style=RED), title="Error", title_align="left", box=ROUNDED, border_style=RED, padding=(0, 2), expand=False))
+    console.print(
+        Panel(
+            Text(message, style=RED),
+            title="Error",
+            title_align="left",
+            box=ROUNDED,
+            border_style=RED,
+            padding=(0, 2),
+            expand=False,
+        )
+    )
