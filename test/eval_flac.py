@@ -87,8 +87,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compare an original FLAC against a reconstructed FLAC"
     )
-    parser.add_argument("original", type=Path, help="Path to the original (reference) FLAC")
-    parser.add_argument("reconstructed", type=Path, help="Path to the reconstructed FLAC")
+    parser.add_argument(
+        "original", type=Path, help="Path to the original (reference) FLAC"
+    )
+    parser.add_argument(
+        "reconstructed", type=Path, help="Path to the reconstructed FLAC"
+    )
     args = parser.parse_args()
 
     if not args.original.exists():
@@ -156,11 +160,26 @@ def main() -> None:
 
     console.print()
     if similarity >= 95 and snr >= 20:
-        console.print(Panel("[green bold]HIGH FIDELITY[/] — reconstruction closely matches the original", border_style="green"))
+        console.print(
+            Panel(
+                "[green bold]HIGH FIDELITY[/] — reconstruction closely matches the original",
+                border_style="green",
+            )
+        )
     elif similarity >= 80 and snr >= 10:
-        console.print(Panel("[yellow bold]ACCEPTABLE[/] — audible differences but structurally intact", border_style="yellow"))
+        console.print(
+            Panel(
+                "[yellow bold]ACCEPTABLE[/] — audible differences but structurally intact",
+                border_style="yellow",
+            )
+        )
     else:
-        console.print(Panel("[red bold]LOW FIDELITY[/] — significant divergence from original", border_style="red"))
+        console.print(
+            Panel(
+                "[red bold]LOW FIDELITY[/] — significant divergence from original",
+                border_style="red",
+            )
+        )
 
 
 if __name__ == "__main__":

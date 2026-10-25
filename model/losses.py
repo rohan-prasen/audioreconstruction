@@ -19,8 +19,20 @@ class SpectralLoss(nn.Module):
         for n_fft in self.fft_sizes:
             hop = n_fft // 4
             window = torch.hann_window(n_fft, device=predicted.device)
-            pred_spec = torch.stft(pred_flat, n_fft=n_fft, hop_length=hop, window=window, return_complex=True).abs()
-            targ_spec = torch.stft(targ_flat, n_fft=n_fft, hop_length=hop, window=window, return_complex=True).abs()
+            pred_spec = torch.stft(
+                pred_flat,
+                n_fft=n_fft,
+                hop_length=hop,
+                window=window,
+                return_complex=True,
+            ).abs()
+            targ_spec = torch.stft(
+                targ_flat,
+                n_fft=n_fft,
+                hop_length=hop,
+                window=window,
+                return_complex=True,
+            ).abs()
             loss = loss + F.l1_loss(pred_spec, targ_spec)
             loss = loss + F.l1_loss(pred_spec.log1p(), targ_spec.log1p())
         return loss / len(self.fft_sizes)
@@ -40,7 +52,7 @@ def discriminator_loss(
     loss = torch.tensor(0.0, device=disc_real_logits[0].device)
     for real_logit, fake_logit in zip(disc_real_logits, disc_fake_logits):
         loss = loss + torch.mean((real_logit - 1.0) ** 2)
-        loss = loss + torch.mean(fake_logit ** 2)
+        loss = loss + torch.mean(fake_logit**2)
     return loss / len(disc_real_logits)
 
 

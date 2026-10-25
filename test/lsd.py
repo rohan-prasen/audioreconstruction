@@ -1,4 +1,5 @@
 """Log-Spectral Distance between two audio files."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -37,7 +38,9 @@ def compute_lsd(ref: torch.Tensor, deg: torch.Tensor) -> float:
 @click.command()
 @click.argument("reference", type=click.Path(exists=True, path_type=Path))
 @click.argument("degraded", type=click.Path(exists=True, path_type=Path))
-@click.option("--sr", default=44100, show_default=True, help="Sample rate for comparison.")
+@click.option(
+    "--sr", default=44100, show_default=True, help="Sample rate for comparison."
+)
 @click.option("--verbose", "-v", is_flag=True)
 def main(reference: Path, degraded: Path, sr: int, verbose: bool) -> None:
     """Log-Spectral Distance between REFERENCE and DEGRADED audio.

@@ -23,9 +23,11 @@ image = (
     .add_local_dir(
         _SERVER_DIR,
         remote_path="/root/server",
-        ignore=lambda p: p.is_relative_to("model/checkpoints")
-        or p.name == "modal_app.py"
-        or p.is_relative_to("__pycache__"),
+        ignore=lambda p: (
+            p.is_relative_to("model/checkpoints")
+            or p.name == "modal_app.py"
+            or p.is_relative_to("__pycache__")
+        ),
     )
     .add_local_dir(
         _SERVER_DIR / "model" / "checkpoints",
@@ -51,7 +53,9 @@ app = modal.App("audioreconstruction")
 @modal.asgi_app()
 def fastapi_app():
     import sys
+
     sys.path.insert(0, "/root")
     sys.path.insert(0, "/root/server")
     from app import app
+
     return app

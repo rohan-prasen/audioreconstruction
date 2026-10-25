@@ -1,4 +1,5 @@
 """PESQ score calculation between two audio files (FLAC/MP3/WAV)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -54,7 +55,7 @@ def compute_pesq(ref_path: Path, deg_path: Path, mode: str) -> float:
         try:
             scores.append(_pesq(target_sr, ref_chunk, deg_chunk, mode))
         except Exception as e:  # noqa: BLE001 - skip any chunk PESQ cannot score, keep the rest
-            click.echo(f"[warn] chunk {start//target_sr}s skipped: {e}", err=True)
+            click.echo(f"[warn] chunk {start // target_sr}s skipped: {e}", err=True)
 
     if not scores:
         raise RuntimeError("No valid chunks produced a PESQ score.")

@@ -12,8 +12,12 @@ console = Console()
 
 
 @click.command()
-@click.option("--checkpoint", type=click.Path(exists=True, path_type=Path), required=True)
-@click.option("--output", "output_dir", type=click.Path(path_type=Path), default=Path("exported"))
+@click.option(
+    "--checkpoint", type=click.Path(exists=True, path_type=Path), required=True
+)
+@click.option(
+    "--output", "output_dir", type=click.Path(path_type=Path), default=Path("exported")
+)
 def main(checkpoint: Path, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -29,11 +33,15 @@ def main(checkpoint: Path, output_dir: Path) -> None:
     cfg.save(output_dir / "config.json")
 
     console.print(f"[green]Exported to {output_dir}/[/green]")
-    console.print(f"  model.safetensors  ({sum(v.numel() for v in weights.values()) / 1e6:.1f}M params)")
+    console.print(
+        f"  model.safetensors  ({sum(v.numel() for v in weights.values()) / 1e6:.1f}M params)"
+    )
     console.print("  config.json")
     console.print()
     console.print("Push to HuggingFace:")
-    console.print(f"  huggingface-cli upload <your-username>/audio-super-resolution {output_dir}/")
+    console.print(
+        f"  huggingface-cli upload <your-username>/audio-super-resolution {output_dir}/"
+    )
 
 
 if __name__ == "__main__":

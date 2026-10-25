@@ -51,7 +51,9 @@ class AudioPairDataset(Dataset):
 
         bitrate = random.choice(self.data_cfg.bitrates)
         lossy = load_audio(
-            self.data_cfg.lossy_dir / str(bitrate) / f"{stem}.mp3", target_sr=sr, channels=ch
+            self.data_cfg.lossy_dir / str(bitrate) / f"{stem}.mp3",
+            target_sr=sr,
+            channels=ch,
         )
 
         min_len = min(lossless.shape[-1], lossy.shape[-1])
@@ -76,9 +78,7 @@ def build_splits(
     val_split: float = 0.2,
     seed: int = 42,
 ) -> tuple[AudioPairDataset, AudioPairDataset]:
-    stems = sorted(
-        p.stem for p in data_cfg.lossless_dir.glob("*.flac")
-    )
+    stems = sorted(p.stem for p in data_cfg.lossless_dir.glob("*.flac"))
     if not stems:
         raise FileNotFoundError(f"No .flac files in {data_cfg.lossless_dir}")
 

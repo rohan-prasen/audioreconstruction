@@ -6,6 +6,7 @@ host Electron app, one process per file. Stdout/stderr contract:
   DONE <output_path>\\n    (stdout, exit 0)
   ERROR <CODE> <message>\\n (stderr, exit non-zero)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -77,7 +78,9 @@ def load_audio(path: Path, target_sr: int, channels: int) -> np.ndarray:
 
     if sr != target_sr:
         frac = Fraction(target_sr, sr).limit_denominator(1000)
-        waveform = scipy.signal.resample_poly(waveform, frac.numerator, frac.denominator, axis=-1)
+        waveform = scipy.signal.resample_poly(
+            waveform, frac.numerator, frac.denominator, axis=-1
+        )
 
     return waveform.astype(np.float32)
 
@@ -126,7 +129,9 @@ def copy_metadata(src_mp3: Path, dst_flac: Path) -> None:
                 flac[vorbis_key] = [text]
                 has_tags = True
         else:
-            print(f"WARN metadata copy skipped for {src_mp3.name}: {exc}", file=sys.stderr)
+            print(
+                f"WARN metadata copy skipped for {src_mp3.name}: {exc}", file=sys.stderr
+            )
 
     if id3 is not None:
         for id3_key, vorbis_key in ID3_TO_VORBIS.items():
@@ -139,7 +144,9 @@ def copy_metadata(src_mp3: Path, dst_flac: Path) -> None:
                 has_tags = True
 
         pictures = [id3[key] for key in id3 if key.startswith("APIC") and id3[key].data]
-        cover = next((p for p in pictures if p.type == 3), pictures[0] if pictures else None)
+        cover = next(
+            (p for p in pictures if p.type == 3), pictures[0] if pictures else None
+        )
         if cover:
             pic = Picture()
             pic.type = cover.type
@@ -158,14 +165,22 @@ def create_session(model_path: Path, providers: list[str]) -> ort.InferenceSessi
         return ort.InferenceSession(str(model_path), providers=providers)
     except Exception as exc:
         if providers == ["CPUExecutionProvider"]:
-            raise OrtInitError(f"onnxruntime failed to initialize even CPUExecutionProvider: {exc}") from exc
+            raise OrtInitError(
+                f"onnxruntime failed to initialize even CPUExecutionProvider: {exc}"
+            ) from exc
         try:
-            return ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+            return ort.InferenceSession(
+                str(model_path), providers=["CPUExecutionProvider"]
+            )
         except Exception as cpu_exc:
-            raise OrtInitError(f"onnxruntime failed to initialize even CPUExecutionProvider: {cpu_exc}") from cpu_exc
+            raise OrtInitError(
+                f"onnxruntime failed to initialize even CPUExecutionProvider: {cpu_exc}"
+            ) from cpu_exc
 
 
-def run_session(session: ort.InferenceSession, model_path: Path, chunk: np.ndarray) -> tuple[ort.InferenceSession, np.ndarray]:
+def run_session(
+    session: ort.InferenceSession, model_path: Path, chunk: np.ndarray
+) -> tuple[ort.InferenceSession, np.ndarray]:
     try:
         out = session.run(["audio_out"], {"audio": chunk})[0]
         return session, out
@@ -177,9 +192,17 @@ def run_session(session: ort.InferenceSession, model_path: Path, chunk: np.ndarr
         return session, out
 
 
-def convert(model_path: Path, config_path: Path, input_path: Path, output_path: Path, provider: str) -> None:
+def convert(
+    model_path: Path,
+    config_path: Path,
+    input_path: Path,
+    output_path: Path,
+    provider: str,
+) -> None:
     if not model_path.exists() or not config_path.exists():
-        raise ModelNotFoundError(f"missing model.onnx or config.json under {model_path.parent}")
+        raise ModelNotFoundError(
+            f"missing model.onnx or config.json under {model_path.parent}"
+        )
 
     cfg = json.loads(config_path.read_text())
     sample_rate = cfg["sample_rate"]
@@ -215,7 +238,9 @@ def run_self_test(model_path: Path, config_path: Path, provider: str) -> None:
     cfg = json.loads(config_path.read_text())
     sample_rate = cfg["sample_rate"]
     channels = cfg["in_channels"]
-    noise = np.random.uniform(-0.5, 0.5, size=(sample_rate, channels)).astype(np.float32)
+    noise = np.random.uniform(-0.5, 0.5, size=(sample_rate, channels)).astype(
+        np.float32
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         in_path = Path(tmp) / "self_test_in.wav"
@@ -226,7 +251,9 @@ def run_self_test(model_path: Path, config_path: Path, provider: str) -> None:
 
         out_data, out_sr = sf.read(str(out_path), dtype="float32", always_2d=True)
         assert out_sr == sample_rate, f"sample rate mismatch: {out_sr} != {sample_rate}"
-        assert abs(out_data.shape[0] - noise.shape[0]) < cfg["segment_length"], "output length diverged by more than one chunk"
+        assert abs(out_data.shape[0] - noise.shape[0]) < cfg["segment_length"], (
+            "output length diverged by more than one chunk"
+        )
         assert np.isfinite(out_data).all(), "output contains NaN/Inf"
 
     print("SELF-TEST PASS", flush=True)
@@ -238,7 +265,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--input", type=Path)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--provider", choices=["auto", "cpu", "directml", "coreml"], default="auto")
+    parser.add_argument(
+        "--provider", choices=["auto", "cpu", "directml", "coreml"], default="auto"
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if not args.self_test and (args.input is None or args.output is None):

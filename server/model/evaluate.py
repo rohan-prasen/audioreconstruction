@@ -31,10 +31,15 @@ def load_generator(checkpoint_dir: Path, device: torch.device) -> Generator:
     return gen
 
 
-def warmup_generator(generator: torch.nn.Module, device: torch.device, cfg: ModelConfig) -> None:
+def warmup_generator(
+    generator: torch.nn.Module, device: torch.device, cfg: ModelConfig
+) -> None:
     logger.info("Warming up model (batch=%d, seg=%d)...", 8, cfg.segment_length)
     dummy = torch.randn(8, cfg.in_channels, cfg.segment_length, device=device)
-    with torch.inference_mode(), torch.amp.autocast("cuda", enabled=device.type == "cuda"):
+    with (
+        torch.inference_mode(),
+        torch.amp.autocast("cuda", enabled=device.type == "cuda"),
+    ):
         generator(dummy)
     del dummy
     if device.type == "cuda":

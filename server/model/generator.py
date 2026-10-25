@@ -8,10 +8,24 @@ from model.config import ModelConfig
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_ch: int, out_ch: int, kernel_size: int, stride: int = 1, dilation: int = 1) -> None:
+    def __init__(
+        self,
+        in_ch: int,
+        out_ch: int,
+        kernel_size: int,
+        stride: int = 1,
+        dilation: int = 1,
+    ) -> None:
         super().__init__()
         padding = (kernel_size * dilation - dilation) // 2
-        self.conv = nn.Conv1d(in_ch, out_ch, kernel_size, stride=stride, padding=padding, dilation=dilation)
+        self.conv = nn.Conv1d(
+            in_ch,
+            out_ch,
+            kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+        )
         self.norm = nn.BatchNorm1d(out_ch)
         self.act = nn.LeakyReLU(0.2)
 
@@ -36,7 +50,9 @@ class EncoderBlock(nn.Module):
 class DecoderBlock(nn.Module):
     def __init__(self, in_ch: int, skip_ch: int, out_ch: int, kernel_size: int) -> None:
         super().__init__()
-        self.upsample = nn.ConvTranspose1d(in_ch, in_ch, kernel_size=4, stride=2, padding=1)
+        self.upsample = nn.ConvTranspose1d(
+            in_ch, in_ch, kernel_size=4, stride=2, padding=1
+        )
         self.conv1 = ConvBlock(in_ch + skip_ch, out_ch, kernel_size)
         self.conv2 = ConvBlock(out_ch, out_ch, kernel_size)
 
@@ -54,7 +70,9 @@ class DecoderBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    def __init__(self, channels: int, kernel_size: int, dilations: tuple[int, ...]) -> None:
+    def __init__(
+        self, channels: int, kernel_size: int, dilations: tuple[int, ...]
+    ) -> None:
         super().__init__()
         self.layers = nn.ModuleList(
             ConvBlock(channels, channels, kernel_size, dilation=d) for d in dilations
@@ -78,8 +96,7 @@ class Generator(nn.Module):
         channels = [cfg.in_channels] + [base * m for m in mults]
 
         self.encoders = nn.ModuleList(
-            EncoderBlock(channels[i], channels[i + 1], ks)
-            for i in range(len(mults))
+            EncoderBlock(channels[i], channels[i + 1], ks) for i in range(len(mults))
         )
 
         self.bottleneck = Bottleneck(channels[-1], ks, cfg.bottleneck_dilations)

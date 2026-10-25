@@ -79,7 +79,7 @@ ALLOWED_ORIGINS = [
 
 # Exactly what new_blob_name() produces. Nothing else is accepted.
 _BLOB_NAME_RE = re.compile(r"^[0-9a-f]{32}\.mp3$")
-_UNSAFE_STEM_RE = re.compile(r'[^\w\-. ]')
+_UNSAFE_STEM_RE = re.compile(r"[^\w\-. ]")
 
 
 class ServeRequest(BaseModel):
@@ -140,6 +140,7 @@ def _get_model_cfg(generator):
     if hasattr(generator, "_orig_mod") and hasattr(generator._orig_mod, "cfg"):
         return generator._orig_mod.cfg
     from model.config import ModelConfig
+
     return ModelConfig()
 
 
@@ -268,8 +269,7 @@ async def model_serve(request: Request, body: ServeRequest):
         )
 
         trimmed = [
-            result[:, :actual_len]
-            for result, (_, actual_len) in zip(results, segments)
+            result[:, :actual_len] for result, (_, actual_len) in zip(results, segments)
         ]
         del segments, results
 
