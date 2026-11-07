@@ -1,32 +1,45 @@
-<div align="center">
+# audioreconstruction
 
-# Audio Reconstruction
+A command-line tool that reconstructs FLAC audio from MP3 files. Run it locally on your CPU.
 
-Reconstruct MP3 audio with a trained neural network.
-
-[![Publish audioreconstructor to PyPI](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml)
 [![PyPI version](https://img.shields.io/pypi/v/audioreconstructor?logo=python&logoColor=white&label=PyPI&color=3776AB)](https://pypi.org/project/audioreconstructor/)
 [![GitHub stars](https://img.shields.io/github/stars/rohan-prasen/audioreconstruction?logo=github&color=yellow)](https://github.com/rohan-prasen/audioreconstruction/stargazers)
-[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-model-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/rohanprasen-kedari/audioreconstruction)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.10--3.13-3776AB?logo=python&logoColor=white)
 
-</div>
+<a id="quick-start-cli"></a>
 
-Audio Reconstruction is a free, open-source tool that turns MP3s into FLACs using a trained neural network. The model aims to reduce compression artifacts and reconstruct detail lost during MP3 encoding.
+## Quick start
 
-**[Try the web app](https://audioreconstruction.vercel.app)**: upload an MP3, let the model process it, and download a FLAC to listen for yourself. You don't need a GPU.
+```bash
+pip install audioreconstructor
+audioreconstructor setup
+audioreconstructor doctor
+audioreconstructor enhance --input <path to mp3> --output <path to output flac>
+```
 
-The model estimates missing detail; it cannot guarantee a match to the original recording. See the [evaluation notes](test/README.md) for comparison tools and sample output.
+![CLI demo showing audio reconstruction in the terminal](/media/recordings/cli-demo.gif)
 
-**Input:** MP3 (128 / 256 / 320 kbps) &nbsp;|&nbsp; **Output:** FLAC (~800+ kbps effective bitrate) &nbsp;|&nbsp; **Audio:** stereo, 44.1 kHz
+To process a whole folder, including subfolders:
 
----
+```bash
+audioreconstructor enhance --folder ./songs
+```
+
+On the first run, `setup` downloads and verifies the runtime and model files. The CLI
+supports 64-bit Linux and Windows, plus macOS on Apple Silicon and Intel.
+Replace the placeholders with your input and output paths. Quote paths that contain spaces.
+See the [CLI guide](onnx/cli/README.md) for more options.
+
+## Web app
+
+You can also upload an MP3 and download the reconstructed FLAC in your browser.
+The [web app](https://audioreconstruction.vercel.app) accepts files up to 25 MB and 6 minutes long.
+
+If the tool helps with your MP3 library, [star the repo](https://github.com/rohan-prasen/audioreconstruction) so others can find it.
 
 ## Contents
 
-- [Pick your path](#pick-your-path)
-- [Quick start (CLI)](#quick-start-cli)
+- [Quick start](#quick-start)
+- [Web app](#web-app)
 - [Reconstruction quality](#reconstruction-quality)
 - [How it works](#how-it-works)
 - [Repository map](#repository-map)
@@ -41,37 +54,6 @@ The model estimates missing detail; it cannot guarantee a match to the original 
 - [Contributing](#contributing) / [Security](#security) / [License](#license)
 
 ---
-
-## Pick your path
-
-| Option | How you use it | Do you need a GPU? |
-| ------ | -------------- | ------------------ |
-| [Web app](https://audioreconstruction.vercel.app) | Drop an MP3 in your browser and download the reconstructed FLAC | No, processing runs on the hosted GPU |
-| [CLI](#quick-start-cli) | Install with pip and process files or folders locally | No, the ONNX model runs on CPU |
-| [Self-host / develop](#getting-started-developers) | Clone the repo to run the FastAPI server and React frontend, or train a model | Required for training; optional for inference |
-
-The web app uses a React frontend on Vercel and the production server on Modal.com. Uploads are limited to 25 MB and 6 minutes per file.
-
-## Quick start (CLI)
-
-The [`audioreconstructor`](https://pypi.org/project/audioreconstructor/) package runs
-the trained model locally through ONNX. You can process a single file or a whole
-folder without installing PyTorch, cloning this repository, or training a model.
-
-```bash
-pip install audioreconstructor
-audioreconstructor setup                                       # downloads + verifies model
-audioreconstructor enhance --input song.mp3 --output song.flac # single file
-audioreconstructor enhance --folder ./songs                    # whole folder (recursive)
-audioreconstructor doctor                                      # diagnose environment / cache
-```
-
-![CLI demo showing audio reconstruction in the terminal](/media/recordings/cli-demo.gif)
-
-`setup` downloads the native executable, `model.onnx`, and `config.json` from the
-matching GitHub Release, verifies each against a SHA-256 manifest, and caches them
-per version. The CLI supports 64-bit Linux and Windows, plus macOS Apple Silicon and Intel.
-See [`onnx/cli/README.md`](onnx/cli/README.md) for execution providers and cache locations.
 
 ## Reconstruction quality
 
@@ -93,28 +75,6 @@ To run the comparison on your own audio, transcode a lossless FLAC to MP3,
 reconstruct it, then run
 `uv run python -m test.eval_flac original.flac reconstructed.flac`.
 See [`test/README.md`](test/README.md) for the comparison commands and another sample output.
-
-### Hear it (before / after)
-
-Listen to the MP3 inputs alongside their reconstructed FLACs. These short clips are from the demo track:
-
-<table>
-  <tr><th>Before — MP3 input</th><th>After — reconstructed FLAC</th></tr>
-  <tr>
-    <td><audio controls src="media/samples/clips/sample1_before.mp3"></audio></td>
-    <td><audio controls src="media/samples/clips/sample1_after.flac"></audio></td>
-  </tr>
-  <tr>
-    <td><audio controls src="media/samples/clips/sample2_before.mp3"></audio></td>
-    <td><audio controls src="media/samples/clips/sample2_after.flac"></audio></td>
-  </tr>
-  <tr>
-    <td><audio controls src="media/samples/clips/sample3_before.mp3"></audio></td>
-    <td><audio controls src="media/samples/clips/sample3_after.flac"></audio></td>
-  </tr>
-</table>
-
-> If GitHub doesn't display the audio players, download the clips from [`media/samples/clips/`](media/samples/clips/) and play them locally.
 
 ## How it works
 
@@ -370,7 +330,3 @@ To report a vulnerability, see [SECURITY.md](docs/SECURITY.md).
 ## License
 
 [MIT](LICENSE) — Rohan Prasen Kedari
-
----
-
-Found this useful? A star helps other people find it — and nudges me to keep improving the model.
