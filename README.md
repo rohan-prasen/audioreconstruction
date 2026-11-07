@@ -1,16 +1,17 @@
 # audioreconstruction
 
-**Give your old MP3s a second listen.**
-
-A trained model reconstructs audio from MP3 files and saves it as FLAC.
-Try it free in your browser or run it locally from the command line.
-
 [![Publish audioreconstructor to PyPi](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml)
 [![PyPI Version](https://img.shields.io/pypi/v/audioreconstructor?logo=python&logoColor=white&label=PyPI&color=3776AB)](https://pypi.org/project/audioreconstructor/)
 [![GitHub stars](https://img.shields.io/github/stars/rohan-prasen/audioreconstruction?logo=github&color=yellow)](https://github.com/rohan-prasen/audioreconstruction/stargazers)
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-model-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/rohanprasen-kedari/audioreconstruction)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10--3.13-3776AB?logo=python&logoColor=white)
+
+**Give your old MP3s a second listen.**
+
+Pick a track you haven’t played in years. `audioreconstruction` uses a trained model to estimate detail lost during MP3 compression and saves the result as FLAC, ready to compare with the copy you know.
+
+Try it for free in your browser or run it locally from the command line.
 
 **[Try in your browser](https://audioreconstruction.vercel.app)** · **[Run locally with the CLI](#quick-start-cli)**
 
