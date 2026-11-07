@@ -1,13 +1,56 @@
+<div align="center">
+
 # Audio Reconstruction
+
+**Lossy MP3 in. Near-lossless FLAC out.**
 
 [![Publish audioreconstructor to PyPi](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/rohan-prasen/audioreconstruction/actions/workflows/publish-pypi.yml)
 [![PyPI Version](https://img.shields.io/pypi/v/audioreconstructor?logo=python&logoColor=white&label=PyPI&color=3776AB)](https://pypi.org/project/audioreconstructor/)
+[![GitHub stars](https://img.shields.io/github/stars/rohan-prasen/audioreconstruction?logo=github&color=yellow)](https://github.com/rohan-prasen/audioreconstruction/stargazers)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-model-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/rohanprasen-kedari/audioreconstruction)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10--3.13-3776AB?logo=python&logoColor=white)
 
-Reconstruct high-fidelity audio from compressed MP3 sources using adversarial neural networks. The model restores lost high-frequency harmonics, spectral detail, and natural timbre — producing near-lossless FLAC output from lossy input.
+</div>
+
+Turn low-bitrate MP3s back into near-FLAC quality audio — **free, open source, no GPU required.** Under the hood, an adversarial neural network (GAN) restores the high-frequency harmonics, spectral detail, and natural timbre that lossy compression throws away.
 
 **Input:** MP3 (128 / 256 / 320 kbps) &nbsp;|&nbsp; **Output:** FLAC (~800+ kbps effective bitrate) &nbsp;|&nbsp; **Audio:** stereo, 44.1 kHz
+
+## Reconstruction quality
+
+Measured on a 30-second demo track by round-trip: a lossless FLAC is degraded to MP3, reconstructed by the model, then scored against the original with [`test/eval_flac.py`](test/eval_flac.py). Numbers are from **one demo track** (not a cherry-picked best, but also not a large-corpus average):
+
+| Source MP3 | SNR vs. original | Spectrogram similarity |
+| ---------- | ---------------: | ---------------------: |
+| 128 kbps   | 16.78 dB         | 99.56 %                |
+| 256 kbps   | 22.62 dB         | 99.96 %                |
+| 320 kbps   | 20.46 dB         | 99.98 %                |
+
+> **Reproduce it:** transcode any lossless FLAC to MP3, reconstruct it, then run
+> `uv run python -m test.eval_flac original.flac reconstructed.flac`.
+
+### Hear it (before / after)
+
+Original MP3 input vs. reconstructed FLAC — short clips from the demo track:
+
+<table>
+  <tr><th>Before — MP3 input</th><th>After — reconstructed FLAC</th></tr>
+  <tr>
+    <td><audio controls src="media/samples/clips/sample1_before.mp3"></audio></td>
+    <td><audio controls src="media/samples/clips/sample1_after.flac"></audio></td>
+  </tr>
+  <tr>
+    <td><audio controls src="media/samples/clips/sample2_before.mp3"></audio></td>
+    <td><audio controls src="media/samples/clips/sample2_after.flac"></audio></td>
+  </tr>
+  <tr>
+    <td><audio controls src="media/samples/clips/sample3_before.mp3"></audio></td>
+    <td><audio controls src="media/samples/clips/sample3_after.flac"></audio></td>
+  </tr>
+</table>
+
+> If the players don't load inline on GitHub, click any clip under [`media/samples/clips/`](media/samples/clips/) to download and play it.
 
 ![](/media/recordings/cli-demo.gif)
 
@@ -15,6 +58,7 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 
 ## Contents
 
+- [Reconstruction quality](#reconstruction-quality) — metrics + before/after audio
 - [Pick your path](#pick-your-path) — three ways to use the project
 - [Quick Start (CLI)](#quick-start-cli) — reconstruct a file in 3 commands
 - [How It Works](#how-it-works) — the GAN model, in brief
@@ -33,6 +77,8 @@ Reconstruct high-fidelity audio from compressed MP3 sources using adversarial ne
 ## Pick your path
 
 There are **three independent ways** to use this project. Choose by how much you want to run yourself:
+
+> **Try it now, no install** → open the hosted web app at **[audioreconstruction.vercel.app](https://audioreconstruction.vercel.app)**, drop in an MP3, download the FLAC (Path 2 below).
 
 | Path | For whom | What you run | Needs a GPU? |
 | ---- | -------- | ------------ | ------------ |
@@ -318,3 +364,7 @@ To report a vulnerability, see [SECURITY.md](docs/SECURITY.md).
 ## License
 
 [MIT](LICENSE) — Rohan Prasen Kedari
+
+---
+
+Found this useful? A ⭐ on the repo helps other people find it — and nudges me to keep improving the model.
