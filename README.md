@@ -1,5 +1,3 @@
-<div align="center">
-
 # audioreconstruction
 
 **Give your old MP3s a second listen.**
@@ -14,9 +12,7 @@ Try it free in your browser or run it locally from the command line.
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10--3.13-3776AB?logo=python&logoColor=white)
 
-[Try in your browser](https://audioreconstruction.vercel.app) · [Run locally with the CLI](#quick-start-cli)
-
-</div>
+**[Try in your browser](https://audioreconstruction.vercel.app)** · **[Run locally with the CLI](#quick-start-cli)**
 
 **Input:** MP3 (128 / 256 / 320 kbps) &nbsp;|&nbsp; **Output:** FLAC (~800+ kbps effective bitrate) &nbsp;|&nbsp; **Audio:** stereo, 44.1 kHz
 
