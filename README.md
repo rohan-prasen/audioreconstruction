@@ -29,30 +29,29 @@ The model reconstructed MP3 encodes of a lossless FLAC at three bitrates. Each r
 | 256 kbps   | 22.62 dB         | 99.96 %                |
 | 320 kbps   | 20.46 dB         | 99.98 %                |
 
-> **Reproduce it:** transcode any lossless FLAC to MP3, reconstruct it, then run
+**Full-track comparison on “Thriller” (128 kbps)**
+
+| Metric vs. the original FLAC | MP3 input | Reconstructed FLAC |
+| ---------------------------- | --------: | -----------------: |
+| SNR                          |  17.53 dB |           12.01 dB |
+| Wideband PESQ                |      4.58 |               4.58 |
+
+SNR changed by **−5.52 dB** across the aligned recording, with no gain adjustment. Wideband PESQ is a speech-quality metric shown here as a supplementary score on 16 kHz mono audio.
+
+> **Reproduce the FLAC comparison:** transcode any lossless FLAC to MP3, reconstruct it, then run
 > `uv run python -m test.eval_flac original.flac reconstructed.flac`.
 
 ### Hear it (before / after)
 
-Original MP3 input vs. reconstructed FLAC — short clips from the demo track:
+Three excerpts from Michael Jackson’s “Bad,” each comparing the 128 kbps MP3 input with the reconstructed FLAC.
 
-<table>
-  <tr><th>Before — MP3 input</th><th>After — reconstructed FLAC</th></tr>
-  <tr>
-    <td><audio controls src="media/samples/clips/sample1_before.mp3"></audio></td>
-    <td><audio controls src="media/samples/clips/sample1_after.flac"></audio></td>
-  </tr>
-  <tr>
-    <td><audio controls src="media/samples/clips/sample2_before.mp3"></audio></td>
-    <td><audio controls src="media/samples/clips/sample2_after.flac"></audio></td>
-  </tr>
-  <tr>
-    <td><audio controls src="media/samples/clips/sample3_before.mp3"></audio></td>
-    <td><audio controls src="media/samples/clips/sample3_after.flac"></audio></td>
-  </tr>
-</table>
+| Excerpt | MP3 input | Reconstructed FLAC |
+| ------- | --------- | ------------------ |
+| 1:00–1:12 | [MP3](https://raw.githubusercontent.com/rohan-prasen/audioreconstruction/main/media/samples/clips/sample1_before.mp3) | [FLAC](https://raw.githubusercontent.com/rohan-prasen/audioreconstruction/main/media/samples/clips/sample1_after.flac) |
+| 1:50–2:02 | [MP3](https://raw.githubusercontent.com/rohan-prasen/audioreconstruction/main/media/samples/clips/sample2_before.mp3) | [FLAC](https://raw.githubusercontent.com/rohan-prasen/audioreconstruction/main/media/samples/clips/sample2_after.flac) |
+| 3:10–3:22 | [MP3](https://raw.githubusercontent.com/rohan-prasen/audioreconstruction/main/media/samples/clips/sample3_before.mp3) | [FLAC](https://raw.githubusercontent.com/rohan-prasen/audioreconstruction/main/media/samples/clips/sample3_after.flac) |
 
-> If the players don't load inline on GitHub, click any clip under [`media/samples/clips/`](media/samples/clips/) to download and play it.
+Browse all six files in [`media/samples/clips/`](media/samples/clips/).
 
 ---
 
