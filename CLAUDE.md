@@ -17,7 +17,7 @@ uv sync
 # Lint
 uv run ruff check .
 
-# Run tests (currently no test_*.py files — nothing to collect yet)
+# Run tests (ONNX metadata and CLI tests)
 uv run pytest
 
 # Prepare training data (requires FFmpeg; transcodes FLAC→MP3 at 128/256/320k)
@@ -49,11 +49,11 @@ cd frontend && bun install && bun dev     # dev server
 cd frontend && bun lint                   # lint
 cd frontend && bun run build              # production build
 
-# ONNX distribution & CLI (self-contained under onnx/ — has its own uv.lock)
+# ONNX distribution & CLI (members under onnx/ share the root uv.lock)
 uv run python -m onnx.export                              # PyTorch generator → onnx/exported/model.onnx
 uv run python onnx/inference.py --input song.mp3 --output song.flac   # torch-free ONNX inference
-cd onnx && pyinstaller audioreconstructor.spec            # build native executable (dist/)
-cd onnx && uv run python cli/tools/generate_manifest.py --version 1.1.0  # SHA-256 manifest for a release
+cd onnx && uv run --locked --package audioreconstruction-native --group build pyinstaller audioreconstructor.spec            # build native executable (dist/)
+cd onnx && uv run python cli/tools/generate_manifest.py --version 1.3.0 --assets-dir ../release-assets  # SHA-256 manifest for a release
 
 # Published CLI package (onnx/cli/ — the `audioreconstructor` PyPI package)
 cd onnx/cli && uv run pytest              # tests (unittest-based; also `python -m unittest`)
@@ -121,7 +121,7 @@ When changing inference behavior that should apply in production, edit `server/`
 
 ### ONNX distribution & CLI (`onnx/`)
 
-A **separate, self-contained delivery path** from the FastAPI servers: it runs the model with *no PyTorch* (onnxruntime only) so it can ship as a small pip package + native binary. This subtree is independent of the root project (`onnx/cli/` has its own `pyproject.toml` and `uv.lock`).
+A **separate, self-contained delivery path** from the FastAPI servers: it runs the model with *no PyTorch* (onnxruntime only) so it can ship as a small pip package + native binary. The CLI and native runtime own sibling manifests under `onnx/cli/` and `onnx/runtime/`. Both use the root workspace lock, alongside `server/`. Regenerate all pip exports with `sh scripts/export-requirements.sh`.
 
 - **`onnx/export.py`** — converts the trained PyTorch generator to `onnx/exported/model.onnx` + `config.json`.
 - **`onnx/inference.py`** — torch-free ONNX inference program (onnxruntime + soundfile + scipy + mutagen for ID3→Vorbis metadata copy). It's a **subprocess** with a line-oriented stdout/stderr contract: `PROGRESS <0-100>`, `DONE <path>` (exit 0), `ERROR <CODE> <msg>` (exit non-zero). One process per file.

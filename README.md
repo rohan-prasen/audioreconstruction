@@ -157,7 +157,7 @@ audioreconstruction/
 │   ├── audio_io.py        # soundfile I/O + ID3 → Vorbis metadata copy
 │   └── modal_app.py       # Modal App/image definition (T4 GPU)
 │
-├── onnx/              # Torch-free ONNX delivery path (own uv.lock)
+├── onnx/              # Torch-free ONNX delivery path (runtime and CLI workspace members)
 │   ├── export.py          # PyTorch generator → model.onnx
 │   ├── inference.py       # onnxruntime inference subprocess
 │   ├── audioreconstructor.spec  # PyInstaller → native binary
@@ -312,7 +312,7 @@ tagged `audioreconstructor-v<version>` → bump `onnx/cli/pyproject.toml` to mat
 ```bash
 # Root Python project
 uv run ruff check .                 # lint
-uv run pytest                       # tests (no test_*.py in the root project yet)
+uv run pytest                       # ONNX metadata and CLI tests
 
 # Published CLI package (onnx/cli/)
 cd onnx/cli && uv run pytest        # unittest-based tests

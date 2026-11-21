@@ -186,7 +186,7 @@ Error codes:
 |------|---------|
 | `export.py` | Dev-only: PyTorch checkpoint → `model.onnx` + `config.json`, with parity verification |
 | `inference.py` | Shipped, torch-free: MP3 → enhanced FLAC using onnxruntime |
-| `requirements.txt` | Pinned dependencies for `inference.py` only (not this repo's main install) |
+| `requirements.txt` | Locked runtime and PyInstaller build dependencies exported from the `onnx/runtime/` workspace member |
 | `audioreconstructor.spec` | PyInstaller specification for the standalone Linux/Windows/macOS executable |
 | `cli/` | Independent PyPI launcher project for `pip install audioreconstructor` |
 | `manifest.json` | Release-asset schema/template; generate the final version alongside the release assets |

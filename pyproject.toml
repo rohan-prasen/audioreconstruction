@@ -44,3 +44,9 @@ dev = [
     "pytest>=9.1.1",
     "pre-commit>=4.6.2",
 ]
+
+[tool.uv.workspace]
+members = ["onnx/runtime", "onnx/cli", "server"]
+
+[tool.uv.sources]
+audioreconstructor = { workspace = true }

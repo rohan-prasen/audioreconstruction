@@ -1,11 +1,311 @@
-fastapi
-uvicorn
-python-multipart
-slowapi
-soundfile
-numpy
-safetensors
-torch
-torchaudio
-modal
-azure-storage-blob
+aiohappyeyeballs==2.7.1
+    # via aiohttp
+aiohttp==3.14.5
+    # via modal
+aiosignal==1.4.0
+    # via aiohttp
+annotated-doc==0.0.6 ; python_full_version < '3.11'
+    # via fastapi
+annotated-doc==0.0.7 ; python_full_version >= '3.11'
+    # via fastapi
+annotated-types==0.8.0
+    # via pydantic
+anyio==4.16.0
+    # via
+    #   fastapi
+    #   starlette
+    #   watchfiles
+async-timeout==5.0.1 ; python_full_version < '3.11'
+    # via aiohttp
+attrs==26.1.0
+    # via aiohttp
+azure-core==1.41.0
+    # via
+    #   audioreconstruction-server
+    #   azure-storage-blob
+azure-storage-blob==12.31.1
+    # via audioreconstruction-server
+cbor2==6.3.0
+    # via modal
+certifi==2026.11.20
+    # via
+    #   modal
+    #   requests
+cffi==2.1.1
+    # via
+    #   cryptography
+    #   soundfile
+charset-normalizer==3.5.2
+    # via requests
+click==8.5.1
+    # via
+    #   modal
+    #   uvicorn
+cryptography==50.0.2
+    # via azure-storage-blob
+cuda-bindings==13.4.4 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via torch
+cuda-bindings==13.5.0 ; python_full_version >= '3.11' and python_full_version < '3.15' and sys_platform == 'linux'
+    # via torch
+cuda-pathfinder==1.8.3 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via cuda-bindings
+cuda-pathfinder==1.9.1 ; python_full_version >= '3.11' and python_full_version < '3.15' and sys_platform == 'linux'
+    # via cuda-bindings
+cuda-toolkit==13.0.3.0 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via torch
+cuda-toolkit==13.2.2 ; python_full_version >= '3.11' and sys_platform == 'linux'
+    # via torch
+deprecated==1.3.1 ; python_full_version < '3.12'
+    # via limits
+deprecated==3.0.1 ; python_full_version >= '3.12'
+    # via limits
+exceptiongroup==1.3.2 ; python_full_version < '3.11'
+    # via anyio
+fastapi==0.162.5 ; python_full_version < '3.11'
+    # via audioreconstruction-server
+fastapi==0.165.0 ; python_full_version >= '3.11'
+    # via audioreconstruction-server
+filelock==4.1.0 ; python_full_version < '3.11'
+    # via torch
+filelock==4.2.12 ; python_full_version >= '3.11'
+    # via torch
+frozenlist==1.8.0
+    # via
+    #   aiohttp
+    #   aiosignal
+fsspec==2026.9.0
+    # via torch
+grpclib==0.4.9
+    # via modal
+h11==0.16.0
+    # via uvicorn
+h2==4.4.1
+    # via grpclib
+hpack==4.2.0
+    # via h2
+hyperframe==6.1.0
+    # via h2
+idna==3.20
+    # via
+    #   anyio
+    #   requests
+    #   yarl
+isodate==0.7.2
+    # via azure-storage-blob
+jinja2==3.1.6
+    # via torch
+limits==5.8.0
+    # via slowapi
+markdown-it-py==4.3.0
+    # via rich
+markupsafe==3.0.4
+    # via jinja2
+mdurl==0.1.2
+    # via markdown-it-py
+modal==1.6.4
+mpmath==1.3.0
+    # via sympy
+multidict==7.1.0 ; python_full_version < '3.11'
+    # via
+    #   aiohttp
+    #   grpclib
+    #   yarl
+multidict==7.2.1 ; python_full_version >= '3.11'
+    # via
+    #   aiohttp
+    #   grpclib
+    #   yarl
+mutagen==1.48.1
+    # via audioreconstruction-server
+networkx==3.4.2 ; python_full_version < '3.11'
+    # via torch
+networkx==3.6.1 ; python_full_version == '3.11.*'
+    # via torch
+networkx==3.7 ; python_full_version >= '3.12'
+    # via torch
+numpy==2.2.6 ; python_full_version < '3.11'
+    # via
+    #   audioreconstruction-server
+    #   soundfile
+numpy==2.4.6 ; python_full_version == '3.11.*'
+    # via
+    #   audioreconstruction-server
+    #   soundfile
+numpy==2.5.5 ; python_full_version >= '3.12'
+    # via
+    #   audioreconstruction-server
+    #   soundfile
+nvidia-cublas==13.1.1.3 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via
+    #   cuda-toolkit
+    #   nvidia-cudnn-cu13
+    #   nvidia-cusolver
+nvidia-cublas==13.4.1.3 ; python_full_version >= '3.11' and sys_platform == 'linux'
+    # via
+    #   cuda-toolkit
+    #   nvidia-cudnn-cu13
+    #   nvidia-cusolver
+nvidia-cuda-cccl==13.3.5.0.6 ; python_full_version >= '3.11' and sys_platform == 'linux'
+    # via nvidia-nvshmem-cu13
+nvidia-cuda-cupti==13.0.85 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cuda-cupti==13.2.86 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cuda-nvrtc==13.0.88 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via
+    #   cuda-toolkit
+    #   nvidia-cublas
+nvidia-cuda-nvrtc==13.2.86 ; python_full_version >= '3.11' and sys_platform == 'linux'
+    # via
+    #   cuda-toolkit
+    #   nvidia-cublas
+nvidia-cuda-runtime==13.0.96 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cuda-runtime==13.2.86 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cudnn-cu13==9.24.0.43 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via torch
+nvidia-cudnn-cu13==9.26.0.51 ; python_full_version >= '3.11' and sys_platform == 'linux'
+    # via torch
+nvidia-cufft==12.0.0.61 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cufft==12.2.0.57 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cufile==1.15.1.6 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cufile==1.17.1.22 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-curand==10.4.0.35 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cusolver==12.0.4.66 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cusolver==12.2.0.11 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-cusparse==12.6.3.3 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via
+    #   cuda-toolkit
+    #   nvidia-cusolver
+nvidia-cusparse==12.7.10.12 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via
+    #   cuda-toolkit
+    #   nvidia-cusolver
+nvidia-cusparselt-cu13==0.8.1 ; sys_platform == 'linux'
+    # via torch
+nvidia-nccl-cu13==2.30.7 ; sys_platform == 'linux'
+    # via torch
+nvidia-nvjitlink==13.5.37 ; (platform_machine == 'aarch64' or platform_machine == 'x86_64') and sys_platform == 'linux'
+    # via
+    #   cuda-toolkit
+    #   nvidia-cufft
+    #   nvidia-cusolver
+    #   nvidia-cusparse
+nvidia-nvshmem-cu13==3.4.5 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via torch
+nvidia-nvshmem-cu13==3.7.2 ; python_full_version >= '3.11' and sys_platform == 'linux'
+    # via torch
+nvidia-nvtx==13.0.85 ; python_full_version < '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+nvidia-nvtx==13.2.86 ; python_full_version >= '3.11' and ((platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux'))
+    # via cuda-toolkit
+opentelemetry-api==1.45.2
+    # via fastapi
+packaging==26.3
+    # via limits
+propcache==0.5.4
+    # via
+    #   aiohttp
+    #   yarl
+protobuf==7.36.2
+    # via modal
+pycparser==3.11 ; python_full_version < '3.11' and implementation_name != 'PyPy'
+    # via cffi
+pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy'
+    # via cffi
+pydantic==2.14.4
+    # via
+    #   audioreconstruction-server
+    #   fastapi
+pydantic-core==2.50.5
+    # via pydantic
+pygments==2.21.0
+    # via rich
+python-multipart==0.0.32 ; python_full_version < '3.11'
+    # via audioreconstruction-server
+python-multipart==0.0.34 ; python_full_version >= '3.11'
+    # via audioreconstruction-server
+requests==2.34.2
+    # via azure-core
+rich==15.0.0
+    # via modal
+safetensors==0.8.0
+    # via audioreconstruction-server
+setuptools==84.2.1
+    # via torch
+slowapi==0.1.10
+    # via audioreconstruction-server
+soundfile==0.14.0
+    # via audioreconstruction-server
+starlette==1.7.0 ; python_full_version < '3.11'
+    # via fastapi
+starlette==1.10.0 ; python_full_version >= '3.11'
+    # via fastapi
+sympy==1.14.0
+    # via torch
+synchronicity==0.12.7
+    # via modal
+toml==0.10.2
+    # via modal
+torch==2.14.1 ; python_full_version < '3.11'
+    # via
+    #   audioreconstruction-server
+    #   torchaudio
+torch==2.15.0 ; python_full_version >= '3.11'
+    # via
+    #   audioreconstruction-server
+    #   torchaudio
+torchaudio==2.11.1
+    # via audioreconstruction-server
+triton==3.8.0 ; python_full_version < '3.11' and sys_platform == 'linux'
+    # via torch
+triton==3.9.0 ; python_full_version >= '3.11' and python_full_version < '3.16' and sys_platform == 'linux'
+    # via torch
+types-certifi==2021.10.8.3
+    # via modal
+types-toml==0.10.8.20260518
+    # via modal
+typing-extensions==4.16.0
+    # via
+    #   aiohttp
+    #   aiosignal
+    #   anyio
+    #   azure-core
+    #   azure-storage-blob
+    #   cryptography
+    #   exceptiongroup
+    #   fastapi
+    #   limits
+    #   modal
+    #   multidict
+    #   opentelemetry-api
+    #   pydantic
+    #   pydantic-core
+    #   soundfile
+    #   starlette
+    #   synchronicity
+    #   torch
+    #   typing-inspection
+    #   uvicorn
+typing-inspection==0.4.5
+    # via
+    #   fastapi
+    #   pydantic
+urllib3==2.8.0
+    # via requests
+uvicorn==0.54.0
+    # via audioreconstruction-server
+watchfiles==1.3.0
+    # via modal
+wrapt==2.5.2
+    # via deprecated
+yarl==1.25.1
+    # via aiohttp

@@ -13,10 +13,11 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from click.testing import CliRunner
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from audioreconstructor import app, batch, cli
-from click.testing import CliRunner
 
 TARGET = cli.Target(
     "Linux", "amd64", "audioreconstructor-linux-amd64", "audioreconstructor"

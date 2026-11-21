@@ -1,0 +1,25 @@
+[project]
+name = "audioreconstruction-server"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-core",
+    "azure-storage-blob",
+    "fastapi",
+    "mutagen",
+    "numpy",
+    "pydantic",
+    "python-multipart",
+    "safetensors",
+    "slowapi",
+    "soundfile",
+    "torch",
+    "torchaudio",
+    "uvicorn",
+]
+
+[dependency-groups]
+deploy = ["modal"]
+
+[tool.uv]
+package = false

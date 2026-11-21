@@ -38,7 +38,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Build package
-        run: uv build onnx/cli
+        run: uv build --package audioreconstructor --out-dir onnx/cli/dist
 
       - name: Publish to PyPI
         run: uv publish onnx/cli/dist/* --trusted-publishing always

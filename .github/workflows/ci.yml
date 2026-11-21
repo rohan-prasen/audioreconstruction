@@ -26,16 +26,34 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.10
+        run: uv python install 3.12
 
       - name: Install dependencies
         run: uv sync --locked
+
+      - name: Check portable requirements
+        run: |
+          sh scripts/export-requirements.sh
+          git diff --exit-code -- requirements.txt server/requirements.txt onnx/requirements.txt
 
       - name: Run Ruff
         run: uv run ruff check .
 
       - name: Run tests
         run: uv run pytest
+
+  cli-checks:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: onnx/cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --locked --python ${{ matrix.python }} pytest
 
   frontend-checks:
     name: Frontend checks

@@ -77,6 +77,7 @@ jobs:
           cat smoke.log
           test "$code" -eq 2
           grep -qi "usage:" smoke.log
+          "$binary" --self-test --provider cpu --model onnx/exported/model.onnx --config onnx/exported/config.json
 
       - name: Rename binary
         shell: bash

@@ -41,7 +41,7 @@ For product intent and target user, see [`PRODUCT.md`](PRODUCT.md). For the desi
 
 ## 2. The Big Picture
 
-This is a **multi-package monorepo**: one Python/training core at the root, plus four sub-projects that each own their environment and lockfile. The root `pyproject.toml` is the *training + server* environment. The sub-projects under `onnx/` and `frontend/` deliberately do **not** inherit it.
+The root uv workspace owns training, evaluation and the local server. Its three members are the production server, the native runtime build and the published CLI. All four Python projects share the root `uv.lock`. The frontend keeps its Bun lockfile. Run `uv workspace list` from any member to inspect the workspace.
 
 ```
 audioreconstruction/
@@ -49,8 +49,8 @@ audioreconstruction/
 ├── model/            ← Training core (root env, Python 3.12, uv)
 ├── backend/          ← Local dev FastAPI server (root env)
 ├── server/           ← Production FastAPI server on Modal.com (root env)
-├── onnx/             ← Torch-free ONNX inference subtree (own uv.lock)
-│   └── cli/          ← "audioreconstructor" PyPI package (own pyproject.toml + uv.lock)
+├── onnx/             ← Torch-free ONNX inference subtree (runtime/ owns native dependencies)
+│   └── cli/          ← "audioreconstructor" PyPI package (independently published workspace member)
 ├── frontend/         ← React 19 + Vite 8 + Tailwind 4 (own package.json, bun)
 ├── test/             ← Standalone audio-similarity eval CLIs (root env)
 │
@@ -88,7 +88,7 @@ Full inventory, dir by dir. **Core** entries are code you own and edit; **artifa
 |---|---|---|
 | `pyproject.toml` | Core | Root project `audioreconstruction` v1.2.1 (training + servers). Manages `model/`, `backend/`, `server/`, `test/`, `onnx/` (export only). |
 | `uv.lock` | Artifact | Root lockfile (uv-managed). |
-| `requirements.txt` | Artifact | Legacy pip freeze (`~236 KB`) — kept for reference; prefer uv. |
+| `requirements.txt` | Artifact | Portable export of locked root runtime dependencies. |
 | `.python-version` | Core | Pins **Python 3.12** for root uv env. |
 | `CLAUDE.md` / `AGENTS.md` | Core | Repo guidance for AI agents. `AGENTS.md` is a **symlink** to `CLAUDE.md` — keep in sync automatically. |
 | `README.md`, `MONOREPO.md`, `PRODUCT.md`, `DESIGN.md` | Core | User-facing readmes, this document, product intent, design system. |
@@ -156,7 +156,7 @@ All modules run as `python -m model.<name>`.
 
 | Entry | Role |
 |---|---|
-| `pyproject.toml`, `uv.lock` | **Own environment.** Supports Python 3.10–3.13 (root is 3.12). |
+| `pyproject.toml` | CLI workspace member. Supports Python 3.10–3.13 (root is 3.12). |
 | `src/audioreconstructor/` | Package source: |
 | ├ `__main__.py`, `__init__.py` | `python -m audioreconstructor` entry. |
 | ├ `app.py` | Click group — three commands: `setup`, `doctor`, `enhance` (`--input/--output` single file, `--folder` recursive batch). |
@@ -182,7 +182,7 @@ All modules run as `python -m model.<name>`.
 
 ### `test/` — Audio similarity evaluation
 
-Standalone CLIs, **not** pytest (root pytest currently has no test files to collect).
+Standalone evaluation CLIs. Root pytest discovers the ONNX metadata and CLI tests.
 
 | File | Role |
 |---|---|
@@ -350,7 +350,7 @@ Env vars come from the Modal secret `azure-blob`:
 
 ## 8. Delivery Path C: `onnx/` (PyPI Package & Binary CLI)
 
-**Why it exists:** serve users who can't/won't run a GPU server — the model runs on-CPU, torch-free, in a native binary. The subtree is independent of the root project: `onnx/cli/` ships `pyproject.toml` + `uv.lock`.
+**Why it exists:** serve users who can't/won't run a GPU server — the model runs on-CPU, torch-free, in a native binary. The CLI wheel declares only its own runtime dependencies. Workspace development uses the local CLI source.
 
 ### Release pipeline
 
@@ -474,9 +474,10 @@ sequenceDiagram
 
 | Env | Manager | Python | Where config lives |
 |---|---|---|---|
-| root (`model/`, `backend/`, `server/`, `test/`) | uv | 3.12 pinned | `pyproject.toml` + `uv.lock` |
-| `onnx/` (export/inference orchestration) | uv | — | `requirements.txt` |
-| `onnx/cli/` | uv | 3.10–3.13 | `pyproject.toml` + `uv.lock` |
+| root (`model/`, `backend/`, `test/`, ONNX export) | uv | 3.12 pinned | `pyproject.toml` + `uv.lock` |
+| `server/` (Modal image) | uv / pip | 3.10 | server manifest → server requirements export |
+| `onnx/runtime/` (inference and binary build) | uv / pip | 3.12 build | runtime manifest → onnx requirements export |
+| `onnx/cli/` | uv | 3.10–3.13 | CLI manifest + root lock |
 | `frontend/` | bun | Node | `package.json` + `bun.lock` |
 
 ### Environment variables
@@ -493,6 +494,10 @@ sequenceDiagram
 `model/config.py` — `ModelConfig`, `TrainConfig`, `DataConfig` dataclasses; `ModelConfig` round-trips through JSON (carried in every checkpoint as `config.json`, letting inference rebuild the exact architecture).
 
 ---
+
+### Future native extensions
+
+When profiling identifies a bottleneck, register a sibling workspace member with its own Cargo manifest, a maturin build backend and PyO3 bindings. Keep the Python entry point and fallback. Compare output shape, channel order and numerical error on the same stereo 44.1 kHz inputs, including a short final segment, then benchmark end-to-end runtime before enabling the extension. The current CLI wheel requires only Python.
 
 ## 14. Command Reference
 
@@ -543,8 +548,8 @@ cd frontend && bun dev && bun lint && bun run build
 ```bash
 uv run python -m onnx.export                                   # torch → model.onnx
 uv run python onnx/inference.py --input song.mp3 --output song.flac   # torch-free
-cd onnx && pyinstaller audioreconstructor.spec                 # native exe → dist/
-cd onnx && uv run python cli/tools/generate_manifest.py --version 1.1.0
+cd onnx && uv run --locked --package audioreconstruction-native --group build pyinstaller audioreconstructor.spec                 # native exe → dist/
+cd onnx && uv run python cli/tools/generate_manifest.py --version 1.3.0 --assets-dir ../release-assets
 cd onnx/cli && uv run pytest                                   # CLI tests
 cd onnx/cli && uv run ruff check .
 ```
@@ -553,7 +558,7 @@ cd onnx/cli && uv run ruff check .
 
 ```bash
 uv run ruff check .       # root lint
-uv run pytest             # root tests (currently collects nothing)
+uv run pytest             # ONNX metadata and CLI tests
 ```
 
 ---
@@ -577,7 +582,7 @@ uv run pytest             # root tests (currently collects nothing)
 4. **Package version ⇄ release tag lockstep** for `audioreconstructor` (see §8). Mismatch breaks `setup`.
 5. **`AGENTS.md` is a symlink to `CLAUDE.md`** — edit once, both update. Do not create a divergent copy.
 6. **Don't run `model/` as a script** — always `python -m model.<module>` (relative imports depend on it).
-7. `docker/` and `plugin/` are empty placeholders. `requirements.txt` at root is a stale freeze artifact — uv + `pyproject.toml` is the source of truth.
+7. `docker/` and `plugin/` are empty placeholders. Regenerate portable requirements with `sh scripts/export-requirements.sh` after locking dependency changes.
 8. The `device` field in `ModelConfig` defaults to `"cuda"`; check/set device explicitly when inferring on CPU.
 
 ---

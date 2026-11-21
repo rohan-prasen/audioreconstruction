@@ -7,19 +7,7 @@ _SERVER_DIR = Path(__file__).parent
 image = (
     modal.Image.debian_slim(python_version="3.10")
     .apt_install("ffmpeg", "libsndfile1")
-    .pip_install(
-        "fastapi",
-        "uvicorn",
-        "python-multipart",
-        "slowapi",
-        "soundfile",
-        "numpy",
-        "safetensors",
-        "torch",
-        "torchaudio",
-        "mutagen",
-        "azure-storage-blob",
-    )
+    .pip_install_from_requirements(str(_SERVER_DIR / "requirements.txt"))
     .add_local_dir(
         _SERVER_DIR,
         remote_path="/root/server",

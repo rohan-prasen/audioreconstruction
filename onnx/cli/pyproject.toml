@@ -43,3 +43,6 @@ audioreconstructor = "audioreconstructor.app:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/audioreconstructor"]
+
+[dependency-groups]
+dev = ["pytest>=9.1.1", "ruff>=0.15.13"]
