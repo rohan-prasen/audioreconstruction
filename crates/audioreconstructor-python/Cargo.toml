@@ -1,0 +1,13 @@
+[package]
+name = "audioreconstructor-python"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "audioreconstructor_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+audioreconstructor-core = { version = "0.1.0", path = "../audioreconstructor-core" }
+pyo3 = "0.29.0"
